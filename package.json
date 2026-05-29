@@ -1,0 +1,18 @@
+{
+  "name": "messenger-saas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-tenant Facebook Messenger SAAS — derived from Typebot + custom bridge",
+  "scripts": {
+    "dev": "node messenger-bridge/index.js",
+    "dev:bridge": "vercel dev --cwd messenger-bridge",
+    "deploy": "vercel --prod",
+    "db:migrate": "node messenger-bridge/scripts/migrate.js",
+    "db:seed": "node messenger-bridge/scripts/seed.js",
+    "test": "node --test messenger-bridge/test/*.test.js",
+    "check": "node --check messenger-bridge/api/*.js && node --check messenger-bridge/lib/*.js"
+  },
+  "engines": {
+    "node": ">=22.x"
+  }
+}
