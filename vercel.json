@@ -1,7 +1,15 @@
 {
+  "buildCommand": "",
+  "outputDirectory": "public",
+  "devCommand": "",
+  "installCommand": "npm install",
+  "functions": {
+    "api/*.js": { "maxDuration": 60 }
+  },
   "rewrites": [
+    { "source": "/", "destination": "/admin.html" },
     { "source": "/webhook", "destination": "/api/webhook" },
     { "source": "/api/admin/:path*", "destination": "/api/admin" },
-    { "source": "/api/:path*", "destination": "/api/admin" }
+    { "source": "/api/ping", "destination": "/api/index" }
   ]
 }
