@@ -1,0 +1,163 @@
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><meta name="theme-color" content="#000000"><title>PawPerfume Admin</title><link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧴</text></svg>"><style>
+:root{color-scheme:dark;--bg:#1c1c1e;--bg2:#000;--bg3:#2c2c2e;--wash:#0a0a0a;--hover:#2c2c2e;--text:#eaedf3;--text2:#8b90a0;--border:#3a3a3c;--accent:#8b5cf6;--accent-h:#7c3aed;--danger:#ef4444;--success:#10b981;--warn:#f59e0b;--r-sm:8px;--r-md:12px;--r-lg:16px;--shadow:0 4px 12px rgba(0,0,0,.5)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--wash);color:var(--text);overflow:hidden;height:100vh}
+#app{display:flex;height:100vh}
+#sidebar{width:240px;min-width:240px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:14px 16px;border-bottom:1px solid var(--border)}
+.sidebar-header h1{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.sidebar-header p{font-size:10px;color:var(--text2)}
+.sidebar-nav{flex:1;padding:4px 0;overflow-y:auto}
+.nav-item{padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);transition:all .1s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--hover);color:var(--text)}
+.nav-item.active{background:var(--bg3);color:var(--text);border-left-color:var(--accent);font-weight:600}
+.nav-section{font-size:9px;font-weight:700;color:#636366;padding:12px 14px 3px;text-transform:uppercase;letter-spacing:1px}
+.sidebar-footer{padding:10px 14px;border-top:1px solid var(--border)}
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+.main-header{padding:8px 16px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
+.main-header h2{font-size:14px;font-weight:600}
+#main-content{flex:1;overflow-y:auto;padding:12px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:10px}
+.card-h{font-size:12.5px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th{text-align:left;color:var(--text2);font-weight:500;padding:6px 8px;border-bottom:2px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:1}
+td{padding:6px 8px;border-bottom:1px solid var(--border)}
+tr:hover{background:var(--hover)}
+.badge{display:inline-block;padding:1px 6px;border-radius:var(--r-sm);font-size:10px;font-weight:600}
+input,textarea,select{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:var(--r-sm);font-size:11.5px;width:100%;font-family:inherit}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+label{display:block;font-size:10px;font-weight:600;color:var(--text2);margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px}
+.fg{margin-bottom:8px}
+.btn{padding:6px 12px;border-radius:var(--r-sm);font-size:11.5px;font-weight:600;border:none;cursor:pointer;transition:all .1s}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{background:var(--accent-h)}
+.btn-d{background:var(--danger);color:#fff}.btn-o{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-sm{padding:3px 7px;font-size:10px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px}
+.stat-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;text-align:center}
+.stat-card .num{font-size:20px;font-weight:800}.stat-card .lbl{font-size:10px;color:var(--text2)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg);border:1px solid var(--border);padding:10px 16px;border-radius:var(--r-md);font-size:12px;z-index:9999;box-shadow:var(--shadow);transform:translateY(100px);opacity:0;transition:all .25s}
+.toast.show{transform:translateY(0);opacity:1}
+#login-wrap{display:flex;align-items:center;justify-content:center;height:100vh}
+.login-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:36px;width:340px;text-align:center}
+.login-box h1{font-size:20px;margin-bottom:4px}.login-box p{font-size:12px;color:var(--text2);margin-bottom:16px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:999;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;width:650px;max-width:95vw;max-height:85vh;overflow-y:auto}
+.clickable{cursor:pointer}
+@media(max-width:768px){#sidebar{position:fixed;z-index:100;transform:translateX(-100%)}#sidebar.open{transform:translateX(0)}#menu-btn{display:block!important}}
+#menu-btn{display:none}
+</style></head><body>
+<div id="login-wrap"><div class="login-box"><h1>🧴 PawPerfume</h1><p>Admin Dashboard</p><input type="password" id="login-pw" placeholder="Password" style="text-align:center;margin-bottom:8px"><button class="btn btn-p" onclick="doLogin()" style="width:100%">Sign In</button></div></div>
+<div id="app" style="display:none">
+<div id="sidebar"><div class="sidebar-header"><h1>🧴 PawPerfume</h1><p>Admin Panel</p></div><div class="sidebar-nav">
+<div class="nav-item active" data-view="overview">📊 Overview</div>
+<div class="nav-item" data-view="chats">📨 Chats</div>
+<div class="nav-item" data-view="orders">📦 Orders</div>
+<div class="nav-item" data-view="automations">⚡ Automations</div>
+<div class="nav-item" data-view="finance">💰 Finance</div>
+<div class="nav-section">Configure</div>
+<div class="nav-item" data-view="flow-builder">🔄 Flow Builder</div>
+<div class="nav-item" data-view="custom-fields">🏷️ Custom Fields</div>
+<div class="nav-item" data-view="faqs">❓ FAQs</div>
+<div class="nav-item" data-view="quick-replies">💬 Quick Replies</div>
+<div class="nav-item" data-view="tags">🏷️ Tags</div>
+<div class="nav-item" data-view="media">🖼️ Media</div>
+<div class="nav-section">System</div>
+<div class="nav-item" data-view="branding">🎨 Branding</div>
+<div class="nav-item" data-view="setup">🚀 Setup</div></div>
+<div class="sidebar-footer"><button class="btn btn-d btn-sm" onclick="doLogout()" style="width:100%">Sign Out</button></div></div>
+<div id="main"><div class="main-header"><button id="menu-btn" class="btn btn-o btn-sm" onclick="toggleSidebar()" style="margin-right:8px">☰</button><h2 id="view-title">📊 Overview</h2></div><div id="main-content"></div></div></div>
+<div id="toast" class="toast"></div>
+<script>
+let T="",V="overview";
+let brand={name:"PawPerfume",logo:"🧴",primary:"#8b5cf6",accent:"#ec4899"};
+function A(){return{Authorization:"Bearer "+T,"Content-Type":"application/json"}}
+function E(s){let d=document.createElement("div");d.textContent=String(s||"");return d.innerHTML}
+async function api(p,m="GET",b){try{let o={method:m,headers:A()};if(b&&m!=="GET")o.body=JSON.stringify(b);let r=await fetch(p,m==="GET"?{headers:A()}:o);return await r.json()}catch(e){return{error:e.message}}}
+function toast(m,t){let e=document.querySelector("#toast");e.textContent=m;e.className="toast show "+(t||"");setTimeout(()=>e.classList.remove("show"),3000)}
+function closeModal(){let m=document.querySelector("#modal");if(m)m.remove()}
+function openModal(html){closeModal();let d=document.createElement("div");d.id="modal";d.className="modal-overlay";d.innerHTML='<div class="modal">'+html+'</div>';d.addEventListener("click",e=>{if(e.target===d)closeModal()});document.body.appendChild(d)}
+
+async function init(){
+ try{let d=await api("/api/admin/tenant-config");if(d&&d.brand_name){brand=d}}catch(e){}
+ if(T){let v=await api("/api/admin/status");if(v.ok){showApp();return}}
+ showLogin()
+}
+function showLogin(){document.querySelector("#login-wrap").style.display="flex";document.querySelector("#app").style.display="none"}
+function showApp(){document.querySelector("#login-wrap").style.display="none";document.querySelector("#app").style.display="flex";navigate(V)}
+async function doLogin(){T=localStorage.getItem("saas_token")||"";if(T){let v=await api("/api/admin/status");if(v.ok){showApp();return}}
+ let pw=document.querySelector("#login-pw").value;let r=await api("/api/admin/login","POST",{password:pw});if(r.ok){T=r.token;localStorage.setItem("saas_token",T);showApp()}else toast("Invalid password","")}
+function doLogout(){T="";localStorage.removeItem("saas_token");showLogin()}
+function toggleSidebar(){document.querySelector("#sidebar").classList.toggle("open")}
+
+document.querySelectorAll(".nav-item").forEach(i=>i.addEventListener("click",()=>navigate(i.dataset.view)));
+
+function navigate(v){V=v;document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("active"));let el=document.querySelector('[data-view="'+v+'"]');if(el)el.classList.add("active");
+ let titles={overview:"📊 Overview",chats:"📨 Chats",orders:"📦 Orders",automations:"⚡ Automations",finance:"💰 Finance","flow-builder":"🔄 Flow Builder","custom-fields":"🏷️ Custom Fields",faqs:"❓ FAQs","quick-replies":"💬 Quick Replies",tags:"🏷️ Tags",media:"🖼️ Media",branding:"🎨 Branding",setup:"🚀 Setup"};
+ document.querySelector("#view-title").textContent=titles[v]||v;loadView(v)}
+
+async function loadView(v){
+ let el=document.querySelector("#main-content");
+ switch(v){
+ case"overview":el.innerHTML=await renderOverview();break;
+ case"chats":el.innerHTML=await renderChats();break;
+ case"orders":el.innerHTML=await renderOrders();break;
+ case"automations":el.innerHTML=await renderAutomations();break;
+ case"finance":el.innerHTML=await renderFinance();break;
+ case"flow-builder":el.innerHTML=await renderFlowBuilder();break;
+ case"custom-fields":el.innerHTML=await renderCustomFields();break;
+ case"faqs":el.innerHTML=await renderFaqs();break;
+ case"quick-replies":el.innerHTML=await renderQuickReplies();break;
+ case"tags":el.innerHTML=await renderTags();break;
+ case"media":el.innerHTML=await renderMedia();break;
+ case"branding":el.innerHTML=await renderBranding();break;
+ case"setup":el.innerHTML=renderSetup();break;
+}}
+
+async function renderOverview(){
+ let[c,a,o,d]=await Promise.all([api("/api/admin/conversations","POST",{limit:1000}),api("/api/admin/automations"),api("/api/admin/orders","POST",{limit:1000}),api("/api/admin/finance","POST",{})]);
+ let convs=c.conversations||[],orders=o.orders||[];
+ let exp=d.filter(e=>e.type==="expense").reduce((s,e)=>s+parseFloat(e.amount||0),0);
+ let rev=d.filter(e=>e.type==="revenue").reduce((s,e)=>s+parseFloat(e.amount||0),0);
+ return'<div class="stats-grid"><div class="stat-card"><div class="num">'+(c.total||0)+'</div><div class="lbl">Total Chats</div></div><div class="stat-card"><div class="num" style="color:var(--success)">'+convs.filter(x=>x.status==="active").length+'</div><div class="lbl">Active</div></div><div class="stat-card"><div class="num">'+(orders.length)+'</div><div class="lbl">Orders</div></div><div class="stat-card"><div class="num" style="color:var(--danger)">₱'+exp.toFixed(0)+'</div><div class="lbl">Expenses</div></div><div class="stat-card"><div class="num" style="color:var(--success)">₱'+rev.toFixed(0)+'</div><div class="lbl">Revenue</div></div></div><div class="card"><div class="card-h">🧴 PawPerfume — Premium Scents, Delivered</div><p style="font-size:12px;color:var(--text2)">Welcome to your admin dashboard. Monitor chats, manage orders, and track your finances from here.</p></div>';
+}
+
+async function renderChats(){let d=await api("/api/admin/conversations","POST",{});let convs=d.conversations||[];if(!convs.length)return'<div class="card"><p style="color:var(--text2);text-align:center;padding:30px">📨 No conversations yet.</p></div>';return'<div class="card"><div class="card-h">📨 Conversations ('+convs.length+')</div><div class="tbl-wrap"><table><tr><th>Customer</th><th>Sender ID</th><th>Status</th><th>Last Activity</th></tr>'+convs.map(c=>'<tr class="clickable" onclick="viewChat('+c.id+')"><td><strong>'+E(c.name||"Unknown")+'</strong></td><td style="font-size:10px;font-family:monospace">'+E(c.sender_id)+'</td><td><span class="badge" style="background:'+(c.status==="active"?"var(--success)":"var(--warn)")+'20;color:'+(c.status==="active"?"var(--success)":"var(--warn)")+'">'+E(c.status)+'</span></td><td style="font-size:10px;color:var(--text2)">'+(c.last_activity_at?new Date(c.last_activity_at).toLocaleString():"—")+'</td></tr>').join("")+'</table></div></div>';}
+
+async function viewChat(id){let conv=await api("/api/admin/conversations/"+id);if(!conv)return;let msgs=await api("/api/admin/messages/"+id);let ml=(msgs.messages||[]);openModal('<div style="display:flex;justify-content:space-between;margin-bottom:10px"><strong>'+E(conv.name||"Unknown")+'</strong><button class="btn btn-o btn-sm" onclick="closeModal()">✕</button></div><div style="max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px">'+ml.map(m=>'<div style="max-width:80%;padding:8px 12px;border-radius:12px;font-size:12px;'+((m.sender_type==="customer"?'align-self:flex-end;background:var(--bg3);border-bottom-right-radius:4px':m.sender_type==="bot"?'align-self:flex-start;background:#1a2340;border-bottom-left-radius:4px':'align-self:flex-start;background:#0d2818;border-bottom-left-radius:4px'))+'">'+E(m.content||"[media]")+'<div style="font-size:9px;color:var(--text2);margin-top:2px">'+new Date(m.created_at).toLocaleString()+'</div></div>').join("")+'</div>');}
+
+async function renderOrders(){let d=await api("/api/admin/orders","POST",{});let orders=d.orders||[],fields=d.custom_fields||[];if(!orders.length)return'<div class="card"><p style="color:var(--text2);text-align:center;padding:30px">📦 No orders yet. Orders are auto-created when the bot flow completes.</p></div>';let hcols="<tr><th>ID</th><th>Customer</th><th>Status</th>";fields.forEach(f=>{hcols+="<th>"+E(f.field_label)+"</th>"});hcols+="<th>Amount</th></tr>";return'<div class="card"><div class="card-h">📦 Orders ('+orders.length+')</div><div class="tbl-wrap"><table><thead>'+hcols+'</thead><tbody>'+orders.map(o=>'<tr class="clickable" onclick="editOrder('+o.id+')"><td>#'+o.id+'</td><td><strong>'+E(o.customer_name||"—")+'</strong></td><td><span class="badge" style="background:var(--accent);color:#fff">'+E(o.status)+'</span></td>'+fields.map(f=>'<td>'+E((o.custom_fields||{})[f.field_key]||"—")+'</td>').join("")+'<td>₱'+parseFloat(o.amount||0).toFixed(2)+'</td></tr>').join("")+'</tbody></table></div></div>';}
+async function editOrder(id){let d=await api("/api/admin/orders","POST",{});let order=(d.orders||[]).find(o=>o.id==id);if(!order)return;let fields=d.custom_fields||[],states=d.order_statuses||[];let fhtml=fields.map(f=>'<div class="fg"><label>'+E(f.field_label)+'</label>'+(f.field_type==="select"||f.field_type==="multi_select"?'<select id="of-'+E(f.field_key)+'">'+(f.field_options||[]).map(o=>'<option value="'+E(o)+'" '+((order.custom_fields||{})[f.field_key]===o?"selected":"")+'>'+E(o)+'</option>').join("")+'</select>':'<input id="of-'+E(f.field_key)+'" value="'+E((order.custom_fields||{})[f.field_key]||"")+'">')+'</div>').join("");openModal('<h3>✏️ Order #'+id+'</h3><div class="fg"><label>Customer</label><input id="of-name" value="'+E(order.customer_name||"")+'"></div><div class="fg"><label>Amount</label><input id="of-amount" type="number" value="'+parseFloat(order.amount||0)+'"></div><div class="fg"><label>Status</label><select id="of-status">'+states.map(s=>'<option value="'+E(s.status_key)+'" '+(order.status===s.status_key?"selected":"")+'>'+E(s.status_label)+'</option>').join("")+'</select></div>'+fhtml+'<button class="btn btn-p" onclick="saveOrder('+id+')" style="margin-top:8px">Save</button>');}
+async function saveOrder(id){let cf={};document.querySelectorAll("[id^='of-']").forEach(el=>{if(!["of-name","of-amount","of-status"].includes(el.id))cf[el.id.replace("of-","")]=el.value});let name=document.querySelector("#of-name")?.value;let amt=parseFloat(document.querySelector("#of-amount")?.value||0);let status=document.querySelector("#of-status")?.value;await api("/api/admin/orders/"+id,"PUT",{customer_name:name,amount:amt,status,payment_status:"pending",custom_fields:cf});toast("Saved!","s");closeModal()}
+
+async function renderAutomations(){let m=await api("/api/admin/automations");return'<div class="card"><div class="card-h">⚡ Automations ('+m.length+') <button class="btn btn-p btn-sm" onclick="addAuto()">+ New</button></div>'+(m.length?'<div class="tbl-wrap"><table><tr><th>Name</th><th>Trigger</th><th>Steps</th><th>Active</th></tr>'+m.map(a=>'<tr><td>'+E(a.name)+'</td><td>'+E(a.trigger_type)+(a.trigger_value?': '+E(a.trigger_value):"")+'</td><td>'+(a.steps||[]).length+' steps</td><td><span class="badge" style="background:'+(a.is_active?"var(--success)":"var(--danger)")+'20;color:'+(a.is_active?"var(--success)":"var(--danger)")+'">'+(a.is_active?"ON":"OFF")+'</span></td></tr>').join("")+'</table></div>':'<p style="color:var(--text2);text-align:center;padding:20px">No automations yet.</p>')+'</div>';}
+function addAuto(){let n=prompt("Name:");if(!n)return;let t=prompt("Trigger type (keyword/new_customer):")||"keyword";let v=prompt("Value:");api("/api/admin/automations","POST",{name:n,trigger_type:t,trigger_value:v,steps:[]}).then(()=>navigate("automations"))}
+
+async function renderFinance(){let d=await api("/api/admin/finance","POST",{});let exp=d.filter(e=>e.type==="expense").reduce((s,e)=>s+parseFloat(e.amount||0),0);let rev=d.filter(e=>e.type==="revenue").reduce((s,e)=>s+parseFloat(e.amount||0),0);return'<div class="stats-grid"><div class="stat-card"><div class="num" style="color:var(--danger)">₱'+exp.toFixed(2)+'</div><div class="lbl">Expenses</div></div><div class="stat-card"><div class="num" style="color:var(--success)">₱'+rev.toFixed(2)+'</div><div class="lbl">Revenue</div></div><div class="stat-card"><div class="num">₱'+(rev-exp).toFixed(2)+'</div><div class="lbl">Net</div></div></div><div class="card"><div class="card-h">💰 Ledger <button class="btn btn-p btn-sm" onclick="addEntry()">+ Add</button></div>'+(d.length?'<div class="tbl-wrap"><table><tr><th>Date</th><th>Desc</th><th>Category</th><th>Type</th><th>Amount</th></tr>'+d.map(e=>'<tr><td>'+(e.date?new Date(e.date).toLocaleDateString():"—")+'</td><td>'+E(e.description||"—")+'</td><td>'+E(e.category||"—")+'</td><td><span class="badge" style="background:'+(e.type==="expense"?"var(--danger)":"var(--success)")+'20;color:'+(e.type==="expense"?"var(--danger)":"var(--success)")+'">'+E(e.type)+'</span></td><td>₱'+parseFloat(e.amount||0).toFixed(2)+'</td></tr>').join("")+'</table></div>':'<p style="color:var(--text2);text-align:center;padding:20px">No entries.</p>')+'</div>';}
+function addEntry(){let ds=prompt("Description:");if(!ds)return;let amt=prompt("Amount:");let cat=prompt("Category:");let dt=prompt("Date (YYYY-MM-DD):")||new Date().toISOString().split("T")[0];let tp=prompt("Type (expense/revenue):")||"expense";api("/api/admin/finance","POST",{date:dt,description:ds,category:cat,amount:parseFloat(amt)||0,type:tp}).then(()=>navigate("finance"))}
+
+async function renderFlowBuilder(){let steps=await api("/api/admin/bot-flow");return'<div class="card"><div class="card-h">🔄 Conversation Flow <button class="btn btn-p btn-sm" onclick="addFlowStep()">+ Add Step</button></div><p style="font-size:11px;color:var(--text2);margin-bottom:8px">Build a step-by-step flow to collect customer info (name, scent preference, bottle size, etc).</p>'+(steps.length?steps.sort((a,b)=>a.sort_order-b.sort_order).map((s,i)=>'<div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:8px;margin-bottom:6px;display:flex;gap:8px;align-items:center"><div style="width:22px;height:22px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+(i+1)+'</div><div style="flex:1"><strong style="font-size:12px">'+E(s.step_label)+'</strong> <span style="font-size:10px;color:var(--text2)">'+s.step_type+' → '+(s.prompt_message||"—").slice(0,40)+'</span></div><button class="btn btn-d btn-sm" onclick="delFlow('+s.id+')">✕</button></div>').join(""):'<p style="color:var(--text2);text-align:center;padding:20px">No flow steps yet. Start building your customer intake flow!</p>')+'</div>';}
+function addFlowStep(){let n=prompt("Step label (e.g. Ask Name):");if(!n)return;let k=n.toLowerCase().replace(/[^a-z0-9]+/g,"_");let t=prompt("Type (text_input/button_choice/auto):")||"text_input";let pm=prompt("Prompt message:");let iv=prompt("Variable name:")||k;api("/api/admin/bot-flow","POST",{stepKey:k,stepLabel:n,stepType:t,promptMessage:pm||"",inputVariable:iv,nextStep:"",sortOrder:99}).then(()=>navigate("flow-builder"))}
+async function delFlow(id){await api("/api/admin/bot-flow/"+id,"DELETE");navigate("flow-builder")}
+
+async function renderCustomFields(){let f=await api("/api/admin/custom-fields");return'<div class="card"><div class="card-h">🏷️ Custom Fields ('+f.length+') <button class="btn btn-p btn-sm" onclick="addCF()">+ Add</button></div>'+(f.length?'<div class="tbl-wrap"><table><tr><th>Key</th><th>Label</th><th>Type</th><th>Options</th></tr>'+f.map(x=>'<tr><td><code>'+E(x.field_key)+'</code></td><td><strong>'+E(x.field_label)+'</strong></td><td>'+E(x.field_type)+'</td><td>'+(x.field_options||[]).map(o=>'<span class="badge" style="background:var(--warn)20;color:var(--warn);margin:1px">'+E(o)+'</span>').join("")||"—")+'</td></tr>').join("")+'</table></div>':'<p style="color:var(--text2);text-align:center;padding:20px">No custom fields yet.</p>')+'</div>';}
+function addCF(){let k=prompt("Key (e.g. scent_preference):");if(!k)return;let l=prompt("Label:");let t=prompt("Type (text/select/multi_select/number):")||"text";let o=[];if(t==="select"||t==="multi_select"){o=prompt("Options (comma-separated):").split(",").map(s=>s.trim())}let a=prompt("Apply to (orders/both):")||"orders";api("/api/admin/custom-fields","POST",{fieldKey:k,fieldLabel:l,fieldType:t,fieldOptions:o,applyTo:a}).then(()=>navigate("custom-fields"))}
+
+async function renderFaqs(){let f=await api("/api/admin/faqs");return'<div class="card"><div class="card-h">❓ FAQs ('+f.length+') <button class="btn btn-p btn-sm" onclick="addFaq()">+ Add</button></div>'+(f.length?'<div class="tbl-wrap"><table><tr><th>Question</th><th>Answer</th><th>Keywords</th></tr>'+f.map(x=>'<tr><td><strong>'+E(x.question)+'</strong></td><td>'+E(x.answer.slice(0,80))+'</td><td>'+(x.keywords||"").split(",").map(k=>'<code>'+E(k.trim())+'</code>').join(" ")+'</td></tr>').join("")+'</table></div>':'<p style="color:var(--text2);text-align:center;padding:20px">No FAQs.</p>')+'</div>';}
+function addFaq(){let q=prompt("Question:");if(!q)return;let a=prompt("Answer:");let kw=prompt("Keywords:");api("/api/admin/faqs","POST",{question:q,answer:a,keywords:kw}).then(()=>navigate("faqs"))}
+
+async function renderQuickReplies(){let r=await api("/api/admin/quick-replies");return'<div class="card"><div class="card-h">💬 Quick Replies ('+r.length+') <button class="btn btn-p btn-sm" onclick="addQR()">+ Add</button></div>'+(r.length?'<div class="tbl-wrap"><table><tr><th>Label</th><th>Message</th></tr>'+r.map(x=>'<tr><td><strong>'+E(x.label)+'</strong></td><td>'+E(x.message.slice(0,80))+'</td></tr>').join("")+'</table></div>':'<p style="color:var(--text2);text-align:center;padding:20px">No quick replies.</p>')+'</div>';}
+function addQR(){let l=prompt("Label:");let m=prompt("Message:");if(l&&m)api("/api/admin/quick-replies","POST",{label:l,message:m}).then(()=>navigate("quick-replies"))}
+
+async function renderTags(){let t=await api("/api/admin/tags");return'<div class="card"><div class="card-h">🏷️ Tags ('+t.length+') <button class="btn btn-p btn-sm" onclick="addTag()">+ Add</button></div>'+(t.length?'<div style="display:flex;flex-wrap:wrap;gap:4px">'+t.map(x=>'<span class="badge" style="background:'+E(x.color)+'20;color:'+E(x.color)+';padding:4px 8px;font-size:11px">'+E(x.tag_label)+'</span>').join("")+'</div>':'<p style="color:var(--text2)">No tags.</p>')+'</div>';}
+function addTag(){let k=prompt("Key:");let l=prompt("Label:");let c=prompt("Color (#hex):");if(k&&l)api("/api/admin/tags","POST",{tagKey:k,tagLabel:l,color:c||"#8b5cf6"}).then(()=>navigate("tags"))}
+
+async function renderMedia(){let m=await api("/api/admin/media");return'<div class="card"><div class="card-h">🖼️ Media ('+m.length+')</div>'+(m.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px">'+m.map(x=>'<div style="text-align:center;border:1px solid var(--border);border-radius:4px;padding:4px"><img src="'+E(x.url)+'" style="width:100%;height:60px;object-fit:cover;border-radius:3px" onerror="this.style.display=\'none\'"><small style="font-size:8px;word-break:break-all">'+E(x.filename||x.category)+'</small></div>').join("")+'</div>':'<p style="color:var(--text2);text-align:center;padding:20px">No media.</p>')+'</div>';}
+
+async function renderBranding(){let d=await api("/api/admin/tenant-config");return'<div class="card" style="max-width:500px"><div class="card-h">🎨 Branding</div><div class="fg"><label>Name</label><input id="br-name" value="'+E((d||{}).brand_name||"")+'"></div><div class="fg"><label>Tagline</label><input id="br-tagline" value="'+E((d||{}).brand_tagline||"")+'"></div><div class="fg"><label>Welcome Message</label><textarea id="br-welcome" rows="2">'+E((d||{}).brand_welcome_message||"")+'</textarea></div><div class="fg"><label>Emoji</label><input id="br-emoji" value="'+E((d||{}).brand_favicon_emoji||"")+'" style="width:60px;font-size:16px;text-align:center"></div><div style="display:flex;gap:8px"><div class="fg" style="flex:1"><label>Primary</label><input id="br-primary" type="color" value="'+E((d||{}).brand_primary_color||"#8b5cf6")+'"></div><div class="fg" style="flex:1"><label>Accent</label><input id="br-accent" type="color" value="'+E((d||{}).brand_accent_color||"#ec4899")+'"></div></div><div class="fg"><label>AI Prompt</label><textarea id="br-ai" rows="2">'+E((d||{}).ai_system_prompt||"")+'</textarea></div><button class="btn btn-p" onclick="saveBranding()">Save</button></div>';}
+async function saveBranding(){await api("/api/admin/tenants","PUT",{brand_name:document.querySelector("#br-name").value,brand_tagline:document.querySelector("#br-tagline").value,brand_welcome_message:document.querySelector("#br-welcome").value,brand_favicon_emoji:document.querySelector("#br-emoji").value,brand_primary_color:document.querySelector("#br-primary").value,brand_accent_color:document.querySelector("#br-accent").value,ai_system_prompt:document.querySelector("#br-ai").value});toast("Saved!","s")}
+
+function renderSetup(){return'<div class="card" style="max-width:500px"><div class="card-h">🚀 Setup</div><ol style="font-size:11.5px;color:var(--text2);padding-left:16px;line-height:1.8"><li>Go to <b>developers.facebook.com</b> → Create App → Add Messenger</li><li>Generate Page Access Token for your FB Page</li><li>Set Webhook URL: <code>'+location.origin+'/webhook</code></li><li>Verify Token: <code>antigravity-verify-token-2026-secure</code></li><li>Subscribe to: <b>messages, messaging_postbacks, message_echoes, standby</b></li><li>Add env vars in Vercel: DATABASE_URL, FB_PAGE_ACCESS_TOKEN, etc.</li></ol></div>';}
+
+init();
+</script></body></html>

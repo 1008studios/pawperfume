@@ -1,18 +1,20 @@
 {
-  "name": "messenger-saas",
+  "name": "messenger-saas-bridge",
   "version": "1.0.0",
   "private": true,
-  "description": "Multi-tenant Facebook Messenger SAAS — derived from Typebot + custom bridge",
+  "description": "Multi-tenant Facebook Messenger SAAS — admin + webhook + automations",
   "scripts": {
-    "dev": "node messenger-bridge/index.js",
-    "dev:bridge": "vercel dev --cwd messenger-bridge",
-    "deploy": "vercel --prod",
-    "db:migrate": "node messenger-bridge/scripts/migrate.js",
-    "db:seed": "node messenger-bridge/scripts/seed.js",
-    "test": "node --test messenger-bridge/test/*.test.js",
-    "check": "node --check messenger-bridge/api/*.js && node --check messenger-bridge/lib/*.js"
+    "dev": "vercel dev",
+    "check": "node --check api/db.js && node --check api/admin.js && node --check api/webhook.js && node --check lib/messenger-profile.js",
+    "test": "node --test test/*.test.js",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js"
   },
-  "engines": {
-    "node": ">=22.x"
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@vercel/blob": "^2.3.3",
+    "@vercel/functions": "^3.5.0",
+    "dotenv": "^17.4.2",
+    "openai": "^6.33.0"
   }
 }

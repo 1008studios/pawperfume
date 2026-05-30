@@ -3,8 +3,8 @@ const {
   getTenantBySlug, getOrCreateConversation, logMessage, isBotEnabled, getAllFaqs,
   getCustomFields, getBotFlowSteps, getBotFlowState, updateBotFlowState,
 } = require("./db");
-const { processMessageWithBotFlow, startBotFlow } = require("../lib/bot-flow-engine");
-const { generateAIReply } = require("../lib/ai-reply");
+const { processMessageWithBotFlow, startBotFlow } = require("./bot-flow-engine");
+const { generateAIReply } = require("./ai-reply");
 
 function getAppSecretProof(accessToken) {
   if (!process.env.FB_APP_SECRET || !accessToken) return "";

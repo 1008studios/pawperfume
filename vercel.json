@@ -1,25 +1,10 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/*.js": { "maxDuration": 60 }
-  },
-  "crons": [
-    { "path": "/api/check-triggers", "schedule": "0 11 * * *" },
-    { "path": "/api/automation-retry", "schedule": "30 11 * * *" }
-  ],
-  "redirects": [
-    { "source": "/", "destination": "/admin", "statusCode": 307 }
-  ],
+  "functions": { "api/*.js": { "maxDuration": 60 } },
+  "redirects": [ { "source": "/", "destination": "/admin.html", "statusCode": 307 } ],
   "rewrites": [
-    { "source": "/privacy", "destination": "/api/admin/privacy" },
-    { "source": "/terms", "destination": "/api/admin/terms" },
-    { "source": "/data-deletion", "destination": "/api/admin/data-deletion" },
     { "source": "/webhook", "destination": "/api/webhook" },
-    { "source": "/api/asset", "destination": "/api/asset.js" },
     { "source": "/api/admin/:path*", "destination": "/api/admin" },
-    { "source": "/api/check-triggers", "destination": "/api/check-triggers" },
-    { "source": "/api/automation-retry", "destination": "/api/automation-retry" },
-    { "source": "/api/bot-followup", "destination": "/api/bot-followup" },
+    { "source": "/api/:path*", "destination": "/api/admin" },
     { "source": "/admin", "destination": "/admin.html" }
   ]
 }
