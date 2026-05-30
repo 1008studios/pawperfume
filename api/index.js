@@ -11,6 +11,16 @@ module.exports = async function handler(req, res) {
   if (path === "/webhook") return handleWebhook(req, res, url);
   if (path.startsWith("/api/admin")) return handleAdmin(req, res, path);
 
+  // Admin dashboard
+  if (path === "/admin") {
+    try {
+      const fs = require("fs"), p = require("path");
+      const html = fs.readFileSync(p.join(process.cwd(), "public", "admin.html"), "utf-8");
+      res.writeHead(200, { "Content-Type": "text/html" });
+      return res.end(html);
+    } catch (e) { return send(res, 500, { error: "Admin page not found" }); }
+  }
+
   try {
     const fs = require("fs"), p = require("path");
     const html = fs.readFileSync(p.join(process.cwd(), "public", "index.html"), "utf-8");
