@@ -1,333 +1,148 @@
 module.exports = async function handler(req, res) {
-  // CORS
-  if (req.method === "OPTIONS") {
-    res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS", "Access-Control-Allow-Headers": "Content-Type,Authorization" });
-    return res.end();
+  const url = new URL(req.url, `https://${req.headers.host || 'pawperfume-v2.vercel.app'}`);
+  const path = url.pathname; const method = req.method;
+  if (method === "OPTIONS") { res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS", "Access-Control-Allow-Headers": "Content-Type,Authorization" }); return res.end(); }
+
+  if (path === "/api" || path === "/api/ping") {
+    const db = await getDb();
+    return send(res, 200, { ok: true, time: new Date().toISOString(), db: !!db });
   }
 
-  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-  const path = url.pathname;
+  if (path === "/webhook") return handleWebhook(req, res, url);
+  if (path.startsWith("/api/admin")) return handleAdmin(req, res, path);
 
-  // Ping
-  if (path === "/api/ping" || path === "/api/health") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ ok: true, version: "2.0", time: new Date().toISOString() }));
+  try {
+    const fs = require("fs"), p = require("path");
+    const html = fs.readFileSync(p.join(process.cwd(), "public", "index.html"), "utf-8");
+    res.writeHead(200, { "Content-Type": "text/html" });
+    return res.end(html);
+  } catch (e) {
+    return send(res, 500, { error: "Failed to load page" });
   }
-
-  // Admin routes
-  if (path.startsWith("/api/admin")) {
-    return handleAdmin(req, res, path, url);
-  }
-
-  // Webhook
-  if (path === "/webhook" || path.startsWith("/api/webhook")) {
-    return handleWebhook(req, res, path, url);
-  }
-
-  // If no API match, serve static
-  if (path === "/" || path === "/admin" || path === "/admin.html") {
-    return serveAdminHTML(req, res);
-  }
-
-  res.writeHead(404, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ error: "Not found" }));
 };
 
-// ── STATIC ──────────────────────────────────────────────
-function serveAdminHTML(req, res) {
-  const fs = require("node:fs");
-  const path = require("node:path");
-  const htmlPath = path.join(process.cwd(), "public", "admin.html");
+function send(r, s, d) { r.writeHead(s, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }); r.end(JSON.stringify(d)); }
+function readBody(req) { return new Promise((R, J) => { let d = ""; req.on("data", c => d += c); req.on("end", () => R(d)); req.on("error", J); }); }
+
+// ── DATABASE ────────────────────────────────────────
+let _db = null; let _dbUrl = null;
+async function getDb() {
+  if (_db) return _db;
+  // Build clean URL
+  const raw = process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+  if (!raw) return null;
   try {
-    const html = fs.readFileSync(htmlPath, "utf-8");
-    res.writeHead(200, { "Content-Type": "text/html", "Access-Control-Allow-Origin": "*" });
-    res.end(html);
-  } catch (e) {
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>PawPerfume Admin</title><style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:#eaedf3}</style></head><body><div style="text-align:center"><h1>🧴 PawPerfume</h1><p>Admin Dashboard</p><div id="login"><input type="password" id="pw" placeholder="Password" style="padding:10px;font-size:14px;margin:10px;border-radius:8px;border:1px solid #3a3a3c;background:#1c1c1e;color:#eaedf3"><br><button onclick="login()" style="padding:10px 24px;font-size:14px;background:#8b5cf6;color:#fff;border:none;border-radius:8px;cursor:pointer">Sign In</button></div></div><script>
-let T="";function A(){return{Authorization:"Bearer "+T,"Content-Type":"application/json"}};async function api(p,m,b){let o={method:m,headers:A()};if(b&&m!=="GET")o.body=JSON.stringify(b);let r=await fetch(p,m==="GET"?{headers:A()}:o);return await r.json()}function show(m){document.getElementById("login").innerHTML=m}
-async function login(){let pw=document.getElementById("pw").value;let r=await api("/api/admin/login","POST",{password:pw});if(r.ok){T=r.token;show("<h2>✅ Logged in</h2><p>Database connected.</p><button onclick='loadDashboard()' style='padding:10px 24px;background:#8b5cf6;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:10px'>Open Dashboard</button>")}else{show("<p style='color:#ef4444'>Wrong password</p><button onclick='location.reload()'>Try again</button>")}}
-async function loadDashboard(){
-  let t=await api("/api/admin/tenant-config");
-  let s=await api("/api/admin/status");
-  show("<h2>🧴 "+(t.brand_name||"PawPerfume")+"</h2><p>"+(t.brand_tagline||"Premium Scents, Delivered")+"</p><hr style='margin:20px 0;border-color:#3a3a3c'>"+
-    "<p>Status: "+(s.ok?"✅ Connected":"❌ Error")+"</p><p>Tenant: "+(t.slug||"default")+"</p><p>Plan: "+(t.plan||"free")+"</p>"+
-    "<p style='margin-top:20px;font-size:12px;color:#8b90a0'>Full dashboard coming soon. Database is live with 23 tables.</p>"+
-    "<div style='margin-top:20px'><a href='/api/admin/conversations' style='color:#8b5cf6'>View Conversations API →</a></div>");
-}
-</script></body></html>`);
-  }
+    const u = new URL(raw);
+    _dbUrl = `postgresql://${u.username}:${u.password}@${u.hostname}${u.pathname}?sslmode=require`;
+    const API = `https://${u.hostname}/sql`;
+    _db = async (query, params = []) => {
+      const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json", "Neon-Connection-String": _dbUrl }, body: JSON.stringify({ query, params }) });
+      const d = await r.json();
+      if (d.message && d.code) throw new Error(d.message);
+      return d.rows || [];
+    };
+    await _db("SELECT 1");
+    return _db;
+  } catch (e) { console.error("DB init:", e.message); return null; }
 }
 
-// ── ADMIN API ───────────────────────────────────────────
-async function handleAdmin(req, res, path, url) {
-  const route = path.replace("/api/admin", "").replace(/\/$/, "").replace(/^\//, "");
-  const db = await getDbConnection();
-  const method = req.method;
-
-  // Parse body
-  let body = {};
-  if (["POST","PUT","PATCH"].includes(method)) {
-    try {
-      const raw = await readBody(req);
-      body = raw ? JSON.parse(raw) : {};
-    } catch (e) {}
-  }
-
-  // Auth (skip for login, status, tenant-config)
-  if (!["login","status","tenant-config"].includes(route.replace(/\/.*/,""))) {
-    const pass = process.env.ADMIN_PASSWORD;
-    if (pass) {
-      const auth = req.headers.authorization || "";
-      const token = auth.replace(/^Bearer\s+/i, "");
-      if (token !== pass) {
-        res.writeHead(401, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify({ error: "Unauthorized" }));
-      }
-    }
-  }
-
-  try {
-    let result;
-    switch (route) {
-      case "login": {
-        if (body.password === process.env.ADMIN_PASSWORD) {
-          res.writeHead(200, { "Content-Type": "application/json", "Set-Cookie": `saas_token=${body.password}; Path=/; Max-Age=604800` });
-          return res.end(JSON.stringify({ ok: true, token: body.password }));
-        }
-        return err(res, 401, "Invalid password");
-      }
-      case "status":
-        return json(res, { ok: true, db: !!db, version: "2.0" });
-      case "tenant-config":
-        if (!db) return err(res, 500, "No DB");
-        try {
-          const t = await db("SELECT * FROM tenants WHERE slug = 'default' LIMIT 1");
-          return json(res, t[0] || { slug: "default", name: "PawPerfume" });
-        } catch (e) { return json(res, { slug: "default", name: "PawPerfume" }); }
-      case "conversations":
-        if (!db) return err(res, 500);
-        try {
-          const convs = await db("SELECT * FROM conversations WHERE tenant_id = 1 ORDER BY updated_at DESC LIMIT 50");
-          return json(res, { conversations: convs, total: convs.length });
-        } catch (e) { return err(res, 500, "Query failed: " + e.message); }
-      case "orders":
-        if (!db) return err(res, 500);
-        try {
-          const orders = await db("SELECT * FROM orders WHERE tenant_id = 1 ORDER BY updated_at DESC LIMIT 50");
-          const fields = await db("SELECT * FROM tenant_custom_fields WHERE tenant_id = 1 ORDER BY sort_order");
-          const statuses = await db("SELECT * FROM tenant_order_statuses WHERE tenant_id = 1 ORDER BY sort_order");
-          return json(res, { orders, custom_fields: fields, order_statuses: statuses });
-        } catch (e) { return err(res, 500, "Query failed: " + e.message); }
-      case "automations":
-        if (!db) return err(res, 500);
-        try {
-          const items = await db("SELECT * FROM automations WHERE tenant_id = 1 ORDER BY id");
-          return json(res, items);
-        } catch (e) { return err(res, 500); }
-        break;
-      case "finance":
-        if (!db) return err(res, 500);
-        try {
-          const items = await db("SELECT * FROM ledger_entries WHERE tenant_id = 1 ORDER BY date DESC LIMIT 50");
-          return json(res, items);
-        } catch (e) { return err(res, 500); }
-        break;
-      case "faqs":
-        if (!db) return err(res, 500);
-        try { return json(res, await db("SELECT * FROM faqs WHERE tenant_id = 1 ORDER BY sort_order")); } catch (e) { return err(res, 500); }
-      case "quick-replies":
-        if (!db) return err(res, 500);
-        try { return json(res, await db("SELECT * FROM quick_replies WHERE tenant_id = 1 ORDER BY sort_order")); } catch (e) { return err(res, 500); }
-      case "custom-fields":
-        if (!db) return err(res, 500);
-        try { return json(res, await db("SELECT * FROM tenant_custom_fields WHERE tenant_id = 1 ORDER BY sort_order")); } catch (e) { return err(res, 500); }
-      case "tags":
-        if (!db) return err(res, 500);
-        try { return json(res, await db("SELECT * FROM tenant_tags WHERE tenant_id = 1 ORDER BY sort_order")); } catch (e) { return err(res, 500); }
-      case "media":
-        if (!db) return err(res, 500);
-        try { return json(res, await db("SELECT * FROM media_assets WHERE tenant_id = 1 ORDER BY created_at DESC")); } catch (e) { return err(res, 500); }
-      case "bot-flow":
-        if (!db) return err(res, 500);
-        try { return json(res, await db("SELECT * FROM bot_flow_steps WHERE tenant_id = 1 ORDER BY sort_order")); } catch (e) { return err(res, 500); }
-      default:
-        // Handle /api/admin/conversations/123 etc
-        if (route.startsWith("conversations/")) {
-          const id = route.split("/")[1];
-          if (method === "PUT" && body) {
-            // Update conversation
-            break;
-          }
-          // Get messages for a conversation
-          try {
-            const msgs = await db("SELECT * FROM messages WHERE tenant_id = 1 AND conversation_id = " + parseInt(id) + " ORDER BY created_at ASC LIMIT 50");
-            return json(res, { messages: msgs });
-          } catch (e) { return err(res, 500); }
-        }
-        if (route.startsWith("orders/") && method === "PUT") {
-          const id = route.split("/")[1];
-          const sets = []; const vals = []; let idx = 1;
-          if (body.status) { sets.push(`status = $${idx++}`); vals.push(body.status); }
-          if (body.customer_name) { sets.push(`customer_name = $${idx++}`); vals.push(body.customer_name); }
-          if (body.amount !== undefined) { sets.push(`amount = $${idx++}`); vals.push(body.amount); }
-          if (body.custom_fields) { sets.push(`custom_fields = $${idx++}`); vals.push(JSON.stringify(body.custom_fields)); }
-          if (sets.length > 0) {
-            sets.push("updated_at = NOW()");
-            vals.push(parseInt(id));
-            await db(`UPDATE orders SET ${sets.join(", ")} WHERE id = $${idx}`, vals);
-            return json(res, { ok: true });
-          }
-          return json(res, { ok: true });
-        }
-        if (route.startsWith("messages/")) {
-          const id = route.split("/")[1];
-          try {
-            const msgs = await db("SELECT * FROM messages WHERE tenant_id = 1 AND conversation_id = " + parseInt(id) + " ORDER BY created_at ASC LIMIT 100");
-            return json(res, { messages: msgs });
-          } catch (e) { return err(res, 500); }
-        }
-        return err(res, 404, `Unknown route: ${route}`);
-    }
-  } catch (e) {
-    return err(res, 500, e.message);
-  }
-
-  res.writeHead(404, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ error: "Route not handled" }));
-}
-
-// ── WEBHOOK ─────────────────────────────────────────────
-async function handleWebhook(req, res, path, url) {
+// ── WEBHOOK ─────────────────────────────────────────
+async function handleWebhook(req, res, url) {
   if (req.method === "GET") {
     if (url.searchParams.get("hub.mode") === "subscribe" && url.searchParams.get("hub.verify_token") === process.env.FB_VERIFY_TOKEN) {
-      res.writeHead(200, { "Content-Type": "text/plain" });
-      return res.end(url.searchParams.get("hub.challenge") || "");
+      res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(url.searchParams.get("hub.challenge") || "");
     }
-    res.writeHead(403);
-    return res.end("Forbidden");
+    res.writeHead(403); return res.end("Forbidden");
   }
-
-  if (req.method === "POST") {
-    let body = "";
-    req.on("data", c => body += c);
-    req.on("end", async () => {
-      res.writeHead(200, { "Content-Type": "text/plain" });
-      res.end("EVENT_RECEIVED");
-      try {
-        const data = JSON.parse(body);
-        await processWebhookEvent(data);
-      } catch (e) {
-        console.error("Webhook error:", e.message);
-      }
-    });
-    return;
-  }
-
-  res.writeHead(405);
-  res.end("Method not allowed");
+  if (req.method !== "POST") { res.writeHead(405); return res.end("Method not allowed"); }
+  let body = ""; req.on("data", c => body += c); req.on("end", () => processWebhook(res, body));
 }
 
-async function processWebhookEvent(data) {
-  if (!data?.entry) return;
-  const db = await getDbConnection();
-  if (!db) return;
-
-  for (const entry of data.entry) {
-    for (const event of entry.messaging || []) {
-      const senderId = event.sender?.id;
-      const msg = event.message;
-      const postback = event.postback;
-      if (!senderId) continue;
-
-      // Get or create conversation
-      let convs = await db("SELECT * FROM conversations WHERE tenant_id = 1 AND sender_id = '" + senderId.replace(/'/g, "''") + "'");
-      let conv;
-      if (convs.length === 0) {
-        convs = await db("INSERT INTO conversations (tenant_id, sender_id) VALUES (1, '" + senderId.replace(/'/g, "''") + "') RETURNING *");
-      }
-      conv = convs[0];
-
-      if (msg?.text) {
-        await db("INSERT INTO messages (tenant_id, conversation_id, sender_type, content, mid) VALUES (1, " + conv.id + ", 'customer', '" + msg.text.replace(/'/g, "''") + "', " + (msg.mid ? "'" + msg.mid.replace(/'/g, "''") + "'" : "NULL") + ")");
-        await db("UPDATE conversations SET updated_at = NOW(), last_activity_at = NOW() WHERE id = " + conv.id);
-      } else if (msg?.attachments) {
-        for (const att of msg.attachments) {
-          await db("INSERT INTO messages (tenant_id, conversation_id, sender_type, message_type, content, media_url) VALUES (1, " + conv.id + ", 'customer', '" + (att.type || "file") + "', '[" + att.type + "]', " + (att.payload?.url ? "'" + att.payload.url.replace(/'/g, "''") + "'" : "NULL") + ")");
+async function processWebhook(res, body) {
+  res.writeHead(200); res.end("EVENT_RECEIVED");
+  try {
+    const db = await getDb(); if (!db) return;
+    const data = JSON.parse(body); if (!data?.entry) return;
+    for (const entry of data.entry) {
+      for (const ev of entry.messaging || []) {
+        const sid = ev.sender?.id; if (!sid) continue;
+        const e = s => String(s || "").replace(/'/g, "''");
+        let convs = await db(`SELECT * FROM conversations WHERE tenant_id=1 AND sender_id='${e(sid)}'`);
+        if (!convs.length) convs = await db(`INSERT INTO conversations (tenant_id,sender_id) VALUES (1,'${e(sid)}') RETURNING *`);
+        const cid = convs[0].id;
+        if (ev.message?.text) { await db(`INSERT INTO messages (tenant_id,conversation_id,sender_type,content) VALUES (1,${cid},'customer','${e(ev.message.text)}')`); await db(`UPDATE conversations SET updated_at=NOW(),last_activity_at=NOW() WHERE id=${cid}`); }
+        if (ev.postback?.payload === "GET_STARTED") {
+          const w = "Welcome to PawPerfume! 🧴 Premium scents, delivered. How can we help?";
+          await db(`INSERT INTO messages (tenant_id,conversation_id,sender_type,content) VALUES (1,${cid},'bot','${e(w)}')`);
+          const t = process.env.FB_PAGE_ACCESS_TOKEN; if (t) fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${t}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({recipient:{id:sid},message:{text:w},messaging_type:"RESPONSE"}) }).catch(()=>{});
         }
       }
-
-      if (postback?.payload === "GET_STARTED") {
-        const welcome = "Welcome to PawPerfume! 🧴 Premium scents, delivered to you. How can we help?";
-        await db("INSERT INTO messages (tenant_id, conversation_id, sender_type, content) VALUES (1, " + conv.id + ", 'bot', '" + welcome.replace(/'/g, "''") + "')");
-        await sendFB(senderId, welcome);
-      }
     }
-  }
+  } catch (e) { console.error("Webhook:", e.message); }
 }
 
-async function sendFB(recipientId, text) {
-  const token = process.env.FB_PAGE_ACCESS_TOKEN;
-  if (!token) return;
-  try {
-    await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${token}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ recipient: { id: recipientId }, message: { text }, messaging_type: "RESPONSE" }),
-    });
-  } catch (e) {}
-}
+// ── ADMIN API ───────────────────────────────────────
+async function handleAdmin(req, res, path) {
+  const db = await getDb(); if (!db) return send(res, 500, { error: "Database not connected" });
+  const route = path.replace("/api/admin", "").replace(/\/$/, "").replace(/^\//, "");
+  let body = {}; if (["POST","PUT"].includes(req.method)) { try { body = JSON.parse(await readBody(req)); } catch(e) {} }
 
-// ── HELPERS ─────────────────────────────────────────────
-function json(res, data) {
-  res.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
-  res.end(JSON.stringify(data));
-}
-
-function err(res, status, msg) {
-  res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
-  res.end(JSON.stringify({ error: msg }));
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = "";
-    req.on("data", c => data += c);
-    req.on("end", () => resolve(data));
-    req.on("error", reject);
-  });
-}
-
-// ── DATABASE ────────────────────────────────────────────
-let _db = null;
-async function getDbConnection() {
-  const url = process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
-  if (!url) return null;
-
-  if (_db) return _db;
-
-  const u = new URL(url);
-  const clean = `postgresql://${u.username}:${u.password}@${u.hostname}${u.pathname}?sslmode=require`;
-  const host = u.hostname;
-  const API = `https://${host}/sql`;
-
-  async function query(sql, params = []) {
-    const r = await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Neon-Connection-String": clean },
-      body: JSON.stringify({ query: sql, params }),
-    });
-    const d = await r.json();
-    if (d.message && d.code) throw new Error(d.message);
-    return d.rows || [];
+  const pass = process.env.ADMIN_PASSWORD;
+  if (pass && route !== "login" && route !== "status" && route !== "tenant-config") {
+    const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    if (token !== pass) return send(res, 401, { error: "Unauthorized" });
   }
 
   try {
-    await query("SELECT 1");
-    _db = query;
-    return query;
-  } catch (e) {
-    console.error("DB init failed:", e.message);
-  }
-  return null;
+    const e = s => String(s || "").replace(/'/g, "''");
+    switch (route) {
+      case "login": return body.password === pass ? send(res, 200, { ok: true, token: pass }) : send(res, 401, { error: "Invalid password" });
+      case "status": return send(res, 200, { ok: true, db: !!db, version: "2.0" });
+      case "tenant-config": return send(res, 200, (await db("SELECT * FROM tenants WHERE slug='default'"))[0] || {});
+      case "conversations": return send(res, 200, { conversations: await db("SELECT * FROM conversations WHERE tenant_id=1 ORDER BY updated_at DESC LIMIT 50"), total: ((await db("SELECT COUNT(*)::int as c FROM conversations WHERE tenant_id=1"))[0]||{}).c||0 });
+      case "orders": return send(res, 200, { orders: await db("SELECT * FROM orders WHERE tenant_id=1 ORDER BY updated_at DESC LIMIT 50"), custom_fields: await db("SELECT * FROM tenant_custom_fields WHERE tenant_id=1"), order_statuses: await db("SELECT * FROM tenant_order_statuses WHERE tenant_id=1 ORDER BY sort_order") });
+      case "automations": return send(res, 200, await db("SELECT * FROM automations WHERE tenant_id=1"));
+      case "finance": return send(res, 200, await db("SELECT * FROM ledger_entries WHERE tenant_id=1 ORDER BY date DESC LIMIT 50"));
+      case "faqs": return send(res, 200, await db("SELECT * FROM faqs WHERE tenant_id=1 ORDER BY sort_order"));
+      case "quick-replies": return send(res, 200, await db("SELECT * FROM quick_replies WHERE tenant_id=1 ORDER BY sort_order"));
+      case "custom-fields": return send(res, 200, await db("SELECT * FROM tenant_custom_fields WHERE tenant_id=1 ORDER BY sort_order"));
+      case "tags": return send(res, 200, await db("SELECT * FROM tenant_tags WHERE tenant_id=1 ORDER BY tag_label"));
+      case "media": return send(res, 200, await db("SELECT * FROM media_assets WHERE tenant_id=1"));
+      case "bot-flow": return send(res, 200, await db("SELECT * FROM bot_flow_steps WHERE tenant_id=1 ORDER BY sort_order"));
+      default:
+        const mm = route.match(/^messages\/(\d+)$/); if (mm) return send(res, 200, { messages: await db(`SELECT * FROM messages WHERE tenant_id=1 AND conversation_id=${mm[1]} ORDER BY created_at ASC LIMIT 100`) });
+        const cc = route.match(/^conversations\/(\d+)$/); if (cc) return send(res, 200, (await db(`SELECT * FROM conversations WHERE tenant_id=1 AND id=${cc[1]}`))[0] || {});
+        const oo = route.match(/^orders\/(\d+)$/);
+        if (oo && req.method === "PUT") {
+          const sets = []; const vals = []; let n = 1;
+          if (body.customer_name) { sets.push(`customer_name=$${n++}`); vals.push(body.customer_name); }
+          if (body.status) { sets.push(`status=$${n++}`); vals.push(body.status); }
+          if (body.amount !== undefined) { sets.push(`amount=$${n++}`); vals.push(body.amount); }
+          if (body.custom_fields) { sets.push(`custom_fields=$${n++}`); vals.push(JSON.stringify(body.custom_fields)); }
+          if (sets.length) { sets.push("updated_at=NOW()"); await db(`UPDATE orders SET ${sets.join(",")} WHERE tenant_id=1 AND id=${oo[1]}`, vals); }
+          return send(res, 200, { ok: true });
+        }
+        if (route === "tenants" && req.method === "PUT") {
+          const sets = []; const vals = []; let n = 1;
+          ["brand_name","brand_tagline","brand_welcome_message","brand_favicon_emoji","brand_primary_color","brand_accent_color","ai_system_prompt","ai_language","ai_tone"].forEach(k => { if (body[k] !== undefined) { sets.push(`${k}=$${n++}`); vals.push(body[k]); } });
+          if (sets.length) { sets.push("updated_at=NOW()"); await db(`UPDATE tenants SET ${sets.join(",")} WHERE id=1`, vals); }
+          return send(res, 200, { ok: true });
+        }
+        if (req.method === "POST") {
+          switch (route) {
+            case "faqs": await db(`INSERT INTO faqs (tenant_id,question,answer,keywords) VALUES (1,'${e(body.question)}','${e(body.answer)}','${e(body.keywords)}')`); break;
+            case "quick-replies": await db(`INSERT INTO quick_replies (tenant_id,label,message) VALUES (1,'${e(body.label)}','${e(body.message)}')`); break;
+            case "automations": await db(`INSERT INTO automations (tenant_id,name,trigger_type,trigger_value) VALUES (1,'${e(body.name)}','${e(body.trigger_type)}','${e(body.trigger_value)}')`); break;
+            case "custom-fields": await db(`INSERT INTO tenant_custom_fields (tenant_id,field_key,field_label,field_type,field_options,apply_to) VALUES (1,'${e(body.fieldKey)}','${e(body.fieldLabel)}','${e(body.fieldType||"text")}','${e(JSON.stringify(body.fieldOptions||[]))}','${e(body.applyTo||"orders")}')`); break;
+            case "tags": await db(`INSERT INTO tenant_tags (tenant_id,tag_key,tag_label,color) VALUES (1,'${e(body.tagKey)}','${e(body.tagLabel)}','${e(body.color||"#8b5cf6")}')`); break;
+            case "media": await db(`INSERT INTO media_assets (tenant_id,category,filename,url) VALUES (1,'${e(body.category||"general")}','${e(body.filename||"")}','${e(body.url)}')`); break;
+            case "finance": await db(`INSERT INTO ledger_entries (tenant_id,date,description,category,amount,type) VALUES (1,'${e(body.date||new Date().toISOString().split("T")[0])}','${e(body.description)}','${e(body.category)}',${body.amount||0},'${e(body.type||"expense")}')`); break;
+            case "orders": await db(`INSERT INTO orders (tenant_id,customer_name,amount,status,payment_status) VALUES (1,'${e(body.customerName||"")}',${body.amount||0},'${e(body.status||"new")}','${e(body.paymentStatus||"pending")}')`); break;
+            case "bot-flow": await db(`INSERT INTO bot_flow_steps (tenant_id,step_key,step_label,step_type,prompt_message,next_step,input_variable,sort_order) VALUES (1,'${e(body.stepKey)}','${e(body.stepLabel)}','${e(body.stepType||"text_input")}','${e(body.promptMessage||"")}','${e(body.nextStep||"")}','${e(body.inputVariable||"")}',${body.sortOrder||99})`); break;
+          }
+          return send(res, 200, { ok: true });
+        }
+        return send(res, 404, { error: `Route not found: ${route}` });
+    }
+  } catch (e) { return send(res, 500, { error: e.message }); }
 }
