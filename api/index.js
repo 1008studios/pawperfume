@@ -1,5 +1,5 @@
-const adminHandler = require("./api/admin");
-const webhookHandler = require("./api/webhook");
+const adminHandler = require("./admin");
+const webhookHandler = require("./webhook");
 
 module.exports = async function handler(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
