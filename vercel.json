@@ -1,8 +1,7 @@
 {
-  "buildCommand": "",
-  "installCommand": "npm install",
+  "version": 2,
   "functions": {
-    "api/*.js": { "maxDuration": 60 }
+    "api/index.js": { "maxDuration": 60 }
   },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
 }
