@@ -108,6 +108,18 @@ async function handleAdmin(req, res, path) {
     switch (route) {
       case "login": return body.password === pass ? send(res, 200, { ok: true, token: pass }) : send(res, 401, { error: "Invalid password" });
       case "status": return send(res, 200, { ok: true, db: !!db, version: "2.0" });
+      case "send-message":
+        if (req.method !== "POST") return send(res, 405, { error: "Method not allowed" });
+        const fbToken = process.env.FB_PAGE_ACCESS_TOKEN;
+        if (!fbToken) return send(res, 500, { error: "FB_PAGE_ACCESS_TOKEN not set" });
+        const fbResp = await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${fbToken}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipient: { id: body.senderId }, message: { text: body.text }, messaging_type: "RESPONSE" })
+        });
+        const fbData = await fbResp.json();
+        if (fbData.error) return send(res, 400, { error: fbData.error.message || "Failed to send" });
+        await db(`INSERT INTO messages (tenant_id,conversation_id,sender_type,content) VALUES (1,(SELECT id FROM conversations WHERE sender_id='${e(body.senderId)}' LIMIT 1),'bot','${e(body.text)}')`);
+        return send(res, 200, { ok: true, fb_id: fbData.message_id });
       case "tenant-config": return send(res, 200, (await db("SELECT * FROM tenants WHERE slug='default'"))[0] || {});
       case "conversations": return send(res, 200, { conversations: await db("SELECT * FROM conversations WHERE tenant_id=1 ORDER BY updated_at DESC LIMIT 50"), total: ((await db("SELECT COUNT(*)::int as c FROM conversations WHERE tenant_id=1"))[0]||{}).c||0 });
       case "orders": return send(res, 200, { orders: await db("SELECT * FROM orders WHERE tenant_id=1 ORDER BY updated_at DESC LIMIT 50"), custom_fields: await db("SELECT * FROM tenant_custom_fields WHERE tenant_id=1"), order_statuses: await db("SELECT * FROM tenant_order_statuses WHERE tenant_id=1 ORDER BY sort_order") });
