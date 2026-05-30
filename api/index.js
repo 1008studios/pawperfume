@@ -164,6 +164,14 @@ async function handleAdmin(req, res, path) {
           }
           return send(res, 200, { ok: true });
         }
+        if (req.method === "DELETE") {
+          const dd = route.match(/^(faqs|quick-replies|automations|bot-flow|tags|custom-fields|media|finance|orders|messages)\/(\d+)$/);
+          if (dd) {
+            const tables = { "faqs":"faqs","quick-replies":"quick_replies","automations":"automations","bot-flow":"bot_flow_steps","tags":"tenant_tags","custom-fields":"tenant_custom_fields","media":"media_assets","finance":"ledger_entries","orders":"orders","messages":"messages" };
+            const tbl = tables[dd[1]];
+            if (tbl) { await db(`DELETE FROM ${tbl} WHERE tenant_id=1 AND id=${dd[2]}`); return send(res, 200, { ok: true }); }
+          }
+        }
         return send(res, 404, { error: `Route not found: ${route}` });
     }
   } catch (e) { return send(res, 500, { error: e.message }); }
