@@ -1,10 +1,7 @@
 {
-  "functions": { "api/*.js": { "maxDuration": 60 } },
-  "redirects": [ { "source": "/", "destination": "/admin.html", "statusCode": 307 } ],
   "rewrites": [
     { "source": "/webhook", "destination": "/api/webhook" },
     { "source": "/api/admin/:path*", "destination": "/api/admin" },
-    { "source": "/api/:path*", "destination": "/api/admin" },
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/api/:path*", "destination": "/api/admin" }
   ]
 }
