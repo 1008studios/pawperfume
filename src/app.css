@@ -1,0 +1,263 @@
+@import url('https://rsms.me/inter/inter.css');
+
+:root {
+	--bg: #ffffff;
+	--surface: #ffffff;
+	--surface-hover: #f7f7f5;
+	--surface-active: #efefed;
+	--surface2: #f7f7f5;
+	--surface3: #f1f1ef;
+	--text: #37352f;
+	--text-secondary: #787774;
+	--text-tertiary: #b4b4b0;
+	--border: #e9e9e7;
+	--border-strong: #d3d3d0;
+	--accent: #2eaadc;
+	--accent-hover: #2496c4;
+	--accent-bg: rgba(46, 170, 220, 0.08);
+	--red: #e03e3e;
+	--red-bg: rgba(224, 62, 62, 0.08);
+	--green: #448361;
+	--green-bg: rgba(68, 131, 97, 0.08);
+	--orange: #d9730d;
+	--orange-bg: rgba(217, 115, 13, 0.08);
+	--purple: #9065b0;
+	--purple-bg: rgba(144, 101, 176, 0.08);
+	--blue: #337ea9;
+	--blue-bg: rgba(51, 126, 169, 0.08);
+	--yellow: #dfab01;
+	--yellow-bg: rgba(223, 171, 1, 0.08);
+	--info: #337ea9;
+	--info-bg: rgba(51, 126, 169, 0.08);
+	--warning: #d9730d;
+	--warning-bg: rgba(217, 115, 13, 0.08);
+	--primary: #6366f1;
+	--primary-bg: rgba(99, 102, 241, 0.08);
+	--sidebar-w: 260px;
+	--topbar-h: 45px;
+	--radius: 6px;
+	--radius-sm: 4px;
+	--radius-lg: 10px;
+	--font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	--shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+	--shadow: 0 2px 8px rgba(0,0,0,0.08);
+	--shadow-lg: 0 4px 16px rgba(0,0,0,0.12);
+	--shadow-xl: 0 8px 32px rgba(0,0,0,0.16);
+	--transition: 150ms ease;
+}
+
+[data-theme="dark"] {
+	--bg: #191919;
+	--surface: #202020;
+	--surface-hover: #2c2c2c;
+	--surface-active: #333333;
+	--surface2: #2c2c2c;
+	--surface3: #333333;
+	--text: #e8e8e5;
+	--text-secondary: #8a8a87;
+	--text-tertiary: #5a5a57;
+	--border: #2f2f2f;
+	--border-strong: #3f3f3f;
+	--accent: #529cca;
+	--accent-hover: #6ab0d8;
+	--accent-bg: rgba(82, 156, 202, 0.1);
+	--red: #e03e3e;
+	--red-bg: rgba(224, 62, 62, 0.12);
+	--green: #448361;
+	--green-bg: rgba(68, 131, 97, 0.12);
+	--orange: #d9730d;
+	--orange-bg: rgba(217, 115, 13, 0.12);
+	--purple: #9065b0;
+	--purple-bg: rgba(144, 101, 176, 0.12);
+	--blue: #529cca;
+	--blue-bg: rgba(82, 156, 202, 0.12);
+	--yellow: #dfab01;
+	--yellow-bg: rgba(223, 171, 1, 0.12);
+	--info: #529cca;
+	--info-bg: rgba(82, 156, 202, 0.12);
+	--warning: #d9730d;
+	--warning-bg: rgba(217, 115, 13, 0.12);
+	--primary: #818cf8;
+	--primary-bg: rgba(129, 140, 248, 0.12);
+	--shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+	--shadow: 0 2px 8px rgba(0,0,0,0.3);
+	--shadow-lg: 0 4px 16px rgba(0,0,0,0.4);
+	--shadow-xl: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { font-family: var(--font); font-size: 16px; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+body { min-height: 100vh; }
+
+::selection { background: var(--accent-bg); color: var(--accent); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+a { color: inherit; text-decoration: none; }
+
+button { font-family: var(--font); cursor: pointer; }
+
+input, textarea, select { font-family: var(--font); font-size: 16px; }
+
+input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
+
+/* Utility classes */
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-orange { color: var(--orange); }
+.text-blue { color: var(--blue); }
+.text-muted { color: var(--text-secondary); }
+.text-sm { font-size: 12px; }
+.text-xs { font-size: 11px; }
+.font-mono { font-family: 'SF Mono', 'Fira Code', monospace; }
+
+/* Mobile touch targets */
+@media (max-width: 768px) {
+	/* Ensure minimum 44x44px touch targets */
+	button, 
+	[role="button"],
+	a.btn,
+	input[type="checkbox"],
+	input[type="radio"],
+	select {
+		min-height: 44px;
+		min-width: 44px;
+	}
+
+	/* Specific overrides for small elements that need padding */
+	.btn-icon,
+	.btn-sm,
+	.nav-badge,
+	.status-dot,
+	.mini-tag {
+		min-height: auto;
+		min-width: auto;
+		padding: 8px;
+	}
+
+	/* Larger touch targets for primary actions */
+	.btn-primary,
+	.btn-danger {
+		padding: 12px 24px;
+	}
+
+	/* Form inputs should be 16px minimum to prevent iOS zoom */
+	input,
+	textarea,
+	select {
+		font-size: 16px !important;
+	}
+
+	/* Improve tap highlighting */
+	button,
+	a,
+	[role="button"] {
+		-webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+		touch-action: manipulation;
+	}
+
+	/* Remove 300ms delay */
+	* {
+		touch-action: manipulation;
+	}
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.animate-fade-in { animation: fadeIn 0.2s ease; }
+.animate-slide-up { animation: slideUp 0.2s ease; }
+.animate-slide-in { animation: slideIn 0.2s ease; }
+.animate-scale-in { animation: scaleIn 0.15s ease; }
+
+/* Mobile-first responsive base */
+@media (max-width: 768px) {
+	/* Prevent iOS zoom on form inputs */
+	input, textarea, select { 
+		font-size: 16px !important; 
+	}
+	
+	/* Smooth scrolling on iOS */
+	* {
+		-webkit-overflow-scrolling: touch;
+	}
+	
+	/* Remove tap highlight color globally */
+	* {
+		-webkit-tap-highlight-color: transparent;
+	}
+	
+	/* Improve scrolling performance */
+	.page {
+		will-change: transform;
+	}
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+	@media (max-width: 768px) {
+		body {
+			padding-left: env(safe-area-inset-left);
+			padding-right: env(safe-area-inset-right);
+		}
+		
+		/* Bottom safe area for modals and fixed elements */
+		.modal-overlay {
+			padding-bottom: env(safe-area-inset-bottom);
+		}
+		
+		.toast-container {
+			bottom: max(20px, env(safe-area-inset-bottom));
+		}
+	}
+}
+
+/* Prevent text size adjustment on orientation change */
+html {
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+/* Smooth transitions for theme changes */
+html[data-theme] {
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Prevent rubber banding on iOS */
+html, body {
+	overscroll-behavior: none;
+}
+
+/* Better focus styles for keyboard users */
+:focus:not(:focus-visible) {
+	outline: none;
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+	.sidebar, .mobile-menu-btn, .toast-container {
+		display: none !important;
+	}
+	
+	.main-content {
+		margin: 0;
+		padding: 0;
+	}
+}

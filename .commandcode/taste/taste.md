@@ -1,6 +1,7 @@
 # Taste (Continuously Learned by [CommandCode][cmd])
 
 [cmd]: https://commandcode.ai/
+
 
 # tech-stack
 See [tech-stack/taste.md](tech-stack/taste.md)

@@ -1,3 +1,6 @@
+-- PawPerfume Schema v3 - SvelteKit Migration
+-- New tables for column configs and receipt extractions
+
 CREATE TABLE IF NOT EXISTS tenants (id BIGSERIAL PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, brand_name TEXT, brand_tagline TEXT DEFAULT 'We deliver.', brand_primary_color TEXT DEFAULT '#8b5cf6', brand_accent_color TEXT DEFAULT '#ec4899', brand_favicon_emoji TEXT DEFAULT '🧴', brand_welcome_message TEXT, ai_system_prompt TEXT, ai_language TEXT DEFAULT 'en', ai_tone TEXT DEFAULT 'friendly', ai_enabled BOOLEAN DEFAULT true, plan TEXT DEFAULT 'free', fb_page_access_token TEXT, fb_app_secret TEXT, fb_verify_token TEXT, fb_page_id TEXT, is_active BOOLEAN DEFAULT true, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS conversations (id BIGSERIAL PRIMARY KEY, tenant_id BIGINT REFERENCES tenants(id), sender_id TEXT NOT NULL, name TEXT, status TEXT DEFAULT 'active', tags JSONB DEFAULT '[]', notes TEXT, custom_fields JSONB DEFAULT '{}', is_bot_enabled BOOLEAN DEFAULT true, last_activity_at TIMESTAMPTZ, updated_at TIMESTAMPTZ DEFAULT NOW(), created_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(tenant_id, sender_id));
 CREATE TABLE IF NOT EXISTS messages (id BIGSERIAL PRIMARY KEY, tenant_id BIGINT REFERENCES tenants(id), conversation_id BIGINT REFERENCES conversations(id), sender_type TEXT NOT NULL, message_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, mid TEXT, created_at TIMESTAMPTZ DEFAULT NOW());
@@ -17,25 +20,32 @@ CREATE TABLE IF NOT EXISTS message_templates (id BIGSERIAL PRIMARY KEY, tenant_i
 CREATE TABLE IF NOT EXISTS audit_log (id BIGSERIAL PRIMARY KEY, tenant_id BIGINT REFERENCES tenants(id), user_email TEXT, action TEXT, details JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS global_settings (key TEXT PRIMARY KEY, value JSONB, updated_at TIMESTAMPTZ DEFAULT NOW());
 
-INSERT INTO global_settings (key, value) VALUES ('schema_version', '"pawperfume-v2"') ON CONFLICT DO NOTHING;
+-- NEW: Column configuration for data-driven tables
+CREATE TABLE IF NOT EXISTS column_configs (id BIGSERIAL PRIMARY KEY, tenant_id BIGINT REFERENCES tenants(id), table_name TEXT NOT NULL, column_key TEXT NOT NULL, column_label TEXT NOT NULL, is_visible BOOLEAN DEFAULT true, sort_order INT DEFAULT 0, width INT, UNIQUE(tenant_id, table_name, column_key));
+
+-- NEW: Receipt extractions
+CREATE TABLE IF NOT EXISTS receipt_extractions (id BIGSERIAL PRIMARY KEY, tenant_id BIGINT REFERENCES tenants(id), media_url TEXT, extracted_data JSONB DEFAULT '{}', order_id BIGINT REFERENCES orders(id), status TEXT DEFAULT 'pending', created_at TIMESTAMPTZ DEFAULT NOW());
+
+-- Seed data
+INSERT INTO global_settings (key, value) VALUES ('schema_version', '"pawperfume-v3"') ON CONFLICT DO NOTHING;
 INSERT INTO tenants (slug, name, brand_name, brand_tagline, brand_primary_color, brand_accent_color, brand_favicon_emoji, brand_welcome_message, ai_system_prompt, ai_language, ai_tone, plan)
-VALUES ('default', 'PawPerfume', 'PawPerfume', 'Premium Scents, Delivered', '#8b5cf6', '#ec4899', '🧴', 'Welcome to PawPerfume! 🧴 Premium perfumes delivered to your door. How can we help?', 'You are the friendly assistant of PawPerfume, a premium perfume business. Keep replies short. Help customers choose scents, place orders, and answer questions.', 'en', 'friendly', 'pro') ON CONFLICT DO NOTHING;
+VALUES ('default', 'PawPerfume', 'PawPerfume', 'Premium Scents, Delivered', '#8b5cf6', '#ec4899', '🧴', 'Welcome to PawPerfume! 🧴 Premium perfumes delivered to your door. How can we help?', 'You are the friendly assistant of PawPerfume, a premium perfume business. Keep replies short and conversational. Help customers choose scents, place orders, and answer questions. Use Taglish when appropriate.', 'tl-en', 'friendly', 'pro') ON CONFLICT DO NOTHING;
 
 INSERT INTO tenant_custom_fields (tenant_id, field_key, field_label, field_type, field_options, apply_to, sort_order) VALUES (1, 'scent_preference', 'Scent Preference', 'select', '["Floral","Woody","Fresh / Citrus","Oriental","Fruity","Any"]', 'orders', 0) ON CONFLICT DO NOTHING;
 INSERT INTO tenant_custom_fields (tenant_id, field_key, field_label, field_type, field_options, apply_to, sort_order) VALUES (1, 'bottle_size', 'Bottle Size', 'select', '["30ml (₱599)","50ml (₱899)","100ml (₱1,499)","Sample Set (₱299)"]', 'orders', 1) ON CONFLICT DO NOTHING;
 INSERT INTO tenant_custom_fields (tenant_id, field_key, field_label, field_type, field_options, apply_to, sort_order) VALUES (1, 'delivery_address', 'Delivery Address', 'text', '[]', 'orders', 2) ON CONFLICT DO NOTHING;
 
 INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, next_step, input_variable, sort_order) VALUES (1, 'greet', 'Welcome', 'auto', 'Welcome to PawPerfume! 🧴 Let me help you find your perfect scent.', 'ask_name', null, 0) ON CONFLICT DO NOTHING;
-INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, next_step, input_variable, sort_order) VALUES (1, 'ask_name', 'Ask Name', 'text_input', 'What is your name?', 'ask_scent', 'customer_name', 1) ON CONFLICT DO NOTHING;
-INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, button_choices, next_step, input_variable, sort_order) VALUES (1, 'ask_scent', 'Scent Preference', 'button_choice', 'What type of scent do you prefer? 🌸', '[{"label":"Floral","next_step":"ask_size"},{"label":"Woody","next_step":"ask_size"},{"label":"Fresh / Citrus","next_step":"ask_size"},{"label":"Oriental","next_step":"ask_size"},{"label":"Fruity","next_step":"ask_size"},{"label":"Not Sure","next_step":"ask_size"}]', null, 'scent_preference', 2) ON CONFLICT DO NOTHING;
-INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, button_choices, next_step, input_variable, sort_order) VALUES (1, 'ask_size', 'Bottle Size', 'button_choice', 'What size would you like? 🧴', '[{"label":"30ml - ₱599","next_step":"ask_address"},{"label":"50ml - ₱899","next_step":"ask_address"},{"label":"100ml - ₱1,499","next_step":"ask_address"},{"label":"Sample Set - ₱299","next_step":"ask_address"}]', null, 'bottle_size', 3) ON CONFLICT DO NOTHING;
-INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, next_step, input_variable, sort_order) VALUES (1, 'ask_address', 'Delivery Address', 'text_input', 'Where should we deliver? 🏠', 'confirm', 'delivery_address', 4) ON CONFLICT DO NOTHING;
-INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, next_step, input_variable, sort_order) VALUES (1, 'confirm', 'Confirmation', 'auto', 'Thank you! Our team will confirm your order shortly. 🧴✨', null, null, 5) ON CONFLICT DO NOTHING;
+INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, next_step, input_variable, sort_order) VALUES (1, 'ask_name', 'Ask Name', 'text_input', 'Ano pangalan mo? / What is your name?', 'ask_scent', 'customer_name', 1) ON CONFLICT DO NOTHING;
+INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, button_choices, next_step, input_variable, sort_order) VALUES (1, 'ask_scent', 'Scent Preference', 'button_choice', 'Anong type ng scent gusto mo? 🌸', '[{"label":"Floral","next_step":"ask_size"},{"label":"Woody","next_step":"ask_size"},{"label":"Fresh / Citrus","next_step":"ask_size"},{"label":"Oriental","next_step":"ask_size"},{"label":"Fruity","next_step":"ask_size"},{"label":"Not Sure","next_step":"ask_size"}]', null, 'scent_preference', 2) ON CONFLICT DO NOTHING;
+INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, button_choices, next_step, input_variable, sort_order) VALUES (1, 'ask_size', 'Bottle Size', 'button_choice', 'Anong size gusto mo? 🧴', '[{"label":"30ml - ₱599","next_step":"ask_address"},{"label":"50ml - ₱899","next_step":"ask_address"},{"label":"100ml - ₱1,499","next_step":"ask_address"},{"label":"Sample Set - ₱299","next_step":"ask_address"}]', null, 'bottle_size', 3) ON CONFLICT DO NOTHING;
+INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, next_step, input_variable, sort_order) VALUES (1, 'ask_address', 'Delivery Address', 'text_input', 'Saan ipapadala? / Where should we deliver? 🏠', 'confirm', 'delivery_address', 4) ON CONFLICT DO NOTHING;
+INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, next_step, input_variable, sort_order) VALUES (1, 'confirm', 'Confirmation', 'auto', 'Salamat! Our team will confirm your order shortly. 🧴✨', null, null, 5) ON CONFLICT DO NOTHING;
 
-INSERT INTO faqs (tenant_id, question, answer, keywords) VALUES (1, 'How much are your perfumes?', 'Sample Sets from ₱299 • 30ml ₱599 • 50ml ₱899 • 100ml ₱1,499. Free delivery on orders ₱1,000+!', 'price,cost,magkano') ON CONFLICT DO NOTHING;
-INSERT INTO faqs (tenant_id, question, answer, keywords) VALUES (1, 'What scents are available?', 'We offer Floral 🌸, Woody 🌲, Fresh/Citrus 🍋, Oriental 🌙, and Fruity 🍓 scents. Custom blends also available!', 'scent,smell,amoy') ON CONFLICT DO NOTHING;
-INSERT INTO faqs (tenant_id, question, answer, keywords) VALUES (1, 'How long is delivery?', 'Metro Manila: 1-2 days. Provincial: 3-5 days via LBC/J&T.', 'delivery,shipping,tagal') ON CONFLICT DO NOTHING;
-INSERT INTO faqs (tenant_id, question, answer, keywords) VALUES (1, 'How do I pay?', 'GCash, Maya, BPI/BDO transfer, and COD (Metro Manila only).', 'payment,pay,gcash,maya') ON CONFLICT DO NOTHING;
+INSERT INTO faqs (tenant_id, question, answer, keywords) VALUES (1, 'How much are your perfumes?', 'Sample Sets from ₱299 • 30ml ₱599 • 50ml ₱899 • 100ml ₱1,499. Free delivery on orders ₱1,000+!', 'price,cost,magkano,how much') ON CONFLICT DO NOTHING;
+INSERT INTO faqs (tenant_id, question, answer, keywords) VALUES (1, 'What scents are available?', 'We offer Floral 🌸, Woody 🌲, Fresh/Citrus 🍋, Oriental 🌙, and Fruity 🍓 scents. Custom blends also available!', 'scent,smell,amoy,available') ON CONFLICT DO NOTHING;
+INSERT INTO faqs (tenant_id, question, answer, keywords) VALUES (1, 'How long is delivery?', 'Metro Manila: 1-2 days. Provincial: 3-5 days via LBC/J&T.', 'delivery,shipping,tagal,how long,kailan') ON CONFLICT DO NOTHING;
+INSERT INTO faqs (tenant_id, question, answer, keywords) VALUES (1, 'How do I pay?', 'GCash, Maya, BPI/BDO transfer, and COD (Metro Manila only).', 'payment,pay,gcash,maya,bayad,paano') ON CONFLICT DO NOTHING;
 
 INSERT INTO quick_replies (tenant_id, label, message) VALUES (1, '👋 Welcome', 'Welcome to PawPerfume! 🧴 Premium perfumes delivered to your door.') ON CONFLICT DO NOTHING;
 INSERT INTO quick_replies (tenant_id, label, message) VALUES (1, '💰 Pricing', 'Our prices: Sample Set ₱299 • 30ml ₱599 • 50ml ₱899 • 100ml ₱1,499') ON CONFLICT DO NOTHING;
@@ -49,3 +59,11 @@ INSERT INTO tenant_tags (tenant_id, tag_key, tag_label, color) VALUES (1, 'vip',
 INSERT INTO tenant_tags (tenant_id, tag_key, tag_label, color) VALUES (1, 'repeat', 'Repeat', '#10b981') ON CONFLICT DO NOTHING;
 INSERT INTO tenant_tags (tenant_id, tag_key, tag_label, color) VALUES (1, 'new', 'New', '#4d8ef7') ON CONFLICT DO NOTHING;
 INSERT INTO tenant_tags (tenant_id, tag_key, tag_label, color) VALUES (1, 'urgent', 'Urgent', '#ef4444') ON CONFLICT DO NOTHING;
+
+-- Default column configs for orders
+INSERT INTO column_configs (tenant_id, table_name, column_key, column_label, is_visible, sort_order) VALUES (1, 'orders', 'id', '#', true, 0) ON CONFLICT DO NOTHING;
+INSERT INTO column_configs (tenant_id, table_name, column_key, column_label, is_visible, sort_order) VALUES (1, 'orders', 'customer_name', 'Customer', true, 1) ON CONFLICT DO NOTHING;
+INSERT INTO column_configs (tenant_id, table_name, column_key, column_label, is_visible, sort_order) VALUES (1, 'orders', 'amount', 'Amount', true, 2) ON CONFLICT DO NOTHING;
+INSERT INTO column_configs (tenant_id, table_name, column_key, column_label, is_visible, sort_order) VALUES (1, 'orders', 'status', 'Status', true, 3) ON CONFLICT DO NOTHING;
+INSERT INTO column_configs (tenant_id, table_name, column_key, column_label, is_visible, sort_order) VALUES (1, 'orders', 'payment_status', 'Payment', true, 4) ON CONFLICT DO NOTHING;
+INSERT INTO column_configs (tenant_id, table_name, column_key, column_label, is_visible, sort_order) VALUES (1, 'orders', 'updated_at', 'Date', true, 5) ON CONFLICT DO NOTHING;

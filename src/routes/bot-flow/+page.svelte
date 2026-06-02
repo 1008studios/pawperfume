@@ -1,0 +1,528 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { api, showToast } from '$lib/api';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import type { BotFlowStep } from '$lib/types';
+
+	let steps = $state<BotFlowStep[]>([]);
+	let loading = $state(true);
+	let showForm = $state(false);
+	let showDeleteConfirm = $state(false);
+	let deletingId = $state<number | null>(null);
+	let editingStep = $state<BotFlowStep | null>(null);
+	let showTestMode = $state(false);
+	let testStepIndex = $state(0);
+	let testInput = $state('');
+	let testLog = $state<Array<{ type: 'bot' | 'user' | 'system'; text: string }>>([]);
+
+	let newStep = $state({
+		stepKey: '',
+		stepLabel: '',
+		stepType: 'text_input',
+		promptMessage: '',
+		nextStep: '',
+		inputVariable: '',
+		buttonChoices: [] as Array<{ label: string; next_step: string }>,
+		sortOrder: 0
+	});
+
+	onMount(async () => { await loadSteps(); });
+
+	async function loadSteps() {
+		loading = true;
+		try { steps = await api.botFlow() as BotFlowStep[]; }
+		catch { showToast('Di makuha ang bot flow. Try lang ulit?', 'error'); }
+		finally { loading = false; }
+	}
+
+	let sortedSteps = $derived(
+		[...steps].sort((a, b) => a.sort_order - b.sort_order)
+	);
+
+	let stepMap = $derived(
+		new Map(sortedSteps.map(s => [s.step_key, s]))
+	);
+
+	function getNextStepName(step: BotFlowStep): string {
+		if (step.next_step) {
+			const next = stepMap.get(step.next_step);
+			return next?.step_label || step.next_step;
+		}
+		return '';
+	}
+
+	async function addStep() {
+		try {
+			if (editingStep) {
+				await api.generic(`/bot-flow/${editingStep.id}`, 'PUT', {
+					step_key: newStep.stepKey,
+					step_label: newStep.stepLabel,
+					step_type: newStep.stepType,
+					prompt_message: newStep.promptMessage,
+					next_step: newStep.nextStep,
+					input_variable: newStep.inputVariable,
+					button_choices: newStep.buttonChoices,
+				});
+				showToast('Step updated!', 'success');
+			} else {
+				await api.createBotFlowStep(newStep);
+				showToast('Step added! Nasa flow na yan.', 'success');
+			}
+			showForm = false;
+			editingStep = null;
+			resetForm();
+			await loadSteps();
+		} catch { showToast('Di ma-save ang step. Try ulit?', 'error'); }
+	}
+
+	function editStep(step: BotFlowStep) {
+		editingStep = step;
+		newStep = {
+			stepKey: step.step_key,
+			stepLabel: step.step_label || '',
+			stepType: step.step_type,
+			promptMessage: step.prompt_message || '',
+			nextStep: step.next_step || '',
+			inputVariable: step.input_variable || '',
+			buttonChoices: step.button_choices || [],
+			sortOrder: step.sort_order
+		};
+		showForm = true;
+	}
+
+	function resetForm() {
+		newStep = { stepKey: '', stepLabel: '', stepType: 'text_input', promptMessage: '', nextStep: '', inputVariable: '', buttonChoices: [], sortOrder: sortedSteps.length };
+	}
+
+	function openNewStep() {
+		editingStep = null;
+		resetForm();
+		newStep.sortOrder = sortedSteps.length;
+		showForm = true;
+	}
+
+	function promptDelete(id: number) {
+		deletingId = id;
+		showDeleteConfirm = true;
+	}
+
+	async function confirmDeleteStep() {
+		if (!deletingId) return;
+		try {
+			await api.generic(`/bot-flow/${deletingId}`, 'DELETE');
+			showToast('Step deleted!', 'success');
+			await loadSteps();
+		} catch { showToast('Di ma-delete. Try ulit?', 'error'); }
+		finally { showDeleteConfirm = false; deletingId = null; }
+	}
+
+	async function moveStep(step: BotFlowStep, direction: -1 | 1) {
+		const idx = sortedSteps.findIndex(s => s.id === step.id);
+		const newIdx = idx + direction;
+		if (newIdx < 0 || newIdx >= sortedSteps.length) return;
+		const other = sortedSteps[newIdx];
+		const tmpOrder = step.sort_order;
+		step.sort_order = other.sort_order;
+		other.sort_order = tmpOrder;
+		try {
+			await api.generic(`/bot-flow/${step.id}`, 'PUT', { sort_order: step.sort_order });
+			await api.generic(`/bot-flow/${other.id}`, 'PUT', { sort_order: other.sort_order });
+			await loadSteps();
+		} catch { showToast('Di ma-reorder. Try ulit?', 'error'); }
+	}
+
+	function startTest() {
+		testStepIndex = 0;
+		testInput = '';
+		testLog = [];
+		showTestMode = true;
+		if (sortedSteps.length > 0) {
+			const firstStep = sortedSteps[0];
+			if (firstStep.prompt_message) {
+				testLog.push({ type: 'bot', text: firstStep.prompt_message });
+			}
+			if (firstStep.step_type === 'auto') {
+				testLog.push({ type: 'system', text: '(Auto step - no input needed)' });
+			}
+		}
+	}
+
+	function submitTestInput() {
+		if (!testInput.trim() && sortedSteps[testStepIndex]?.step_type !== 'auto') return;
+		const currentStep = sortedSteps[testStepIndex];
+		if (!currentStep) return;
+
+		if (testInput.trim()) {
+			testLog.push({ type: 'user', text: testInput });
+		}
+		testInput = '';
+
+		if (currentStep.next_step) {
+			const nextIdx = sortedSteps.findIndex(s => s.step_key === currentStep.next_step);
+			if (nextIdx >= 0) {
+				testStepIndex = nextIdx;
+				const nextStep = sortedSteps[nextIdx];
+				if (nextStep.prompt_message) {
+					setTimeout(() => {
+						testLog.push({ type: 'bot', text: nextStep.prompt_message || '' });
+						testLog = [...testLog];
+						if (nextStep.step_type === 'auto' && nextStep.next_step) {
+							setTimeout(() => {
+								testLog.push({ type: 'system', text: '(Auto step)' });
+								testLog = [...testLog];
+							}, 500);
+						}
+					}, 300);
+				}
+			}
+		} else {
+			testLog.push({ type: 'system', text: ' Flow complete! An order would be created here.' });
+		}
+		testLog = [...testLog];
+	}
+
+	function exportFlow() {
+		const data = sortedSteps.map(s => ({
+			step_key: s.step_key,
+			step_label: s.step_label,
+			step_type: s.step_type,
+			prompt_message: s.prompt_message,
+			next_step: s.next_step,
+			input_variable: s.input_variable,
+			button_choices: s.button_choices,
+		}));
+		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+		const a = document.createElement('a');
+		a.href = URL.createObjectURL(blob);
+		a.download = 'bot-flow.json';
+		a.click();
+		showToast('Bot flow na-export na! JSON file ready.', 'success');
+	}
+
+	function addButtonChoice() {
+		newStep.buttonChoices = [...newStep.buttonChoices, { label: '', next_step: '' }];
+	}
+
+	function removeButtonChoice(index: number) {
+		newStep.buttonChoices = newStep.buttonChoices.filter((_, i) => i !== index);
+	}
+</script>
+
+<ConfirmDialog
+	bind:open={showDeleteConfirm}
+	title="Delete This Bot Flow Step?"
+	message="Ma-remove ito sa bot flow mo. Kung may next step na naka-link dito, baka ma-disrupt ang flow."
+	confirmText="Yes, Delete"
+	cancelText="Cancel"
+	variant="danger"
+	onConfirm={confirmDeleteStep}
+/>
+
+<div class="page">
+	<header class="page-header">
+		<div class="breadcrumb">
+			<span class="breadcrumb-icon"></span>
+			<h1>Bot Flow</h1>
+			<span class="step-count">{sortedSteps.length} steps</span>
+		</div>
+		<div class="page-actions">
+			{#if sortedSteps.length > 0}
+				<button class="btn btn-ghost" onclick={startTest}>Test Flow</button>
+				<button class="btn btn-ghost" onclick={exportFlow}>Export</button>
+			{/if}
+			<button class="btn btn-primary" onclick={openNewStep}>+ Add Step</button>
+		</div>
+	</header>
+
+	{#if loading}
+		<div class="loading-state">Loading...</div>
+	{:else if sortedSteps.length === 0}
+		<div class="empty-hero">
+			<div class="empty-icon"></div>
+			<h2>Build Your Bot Flow</h2>
+			<p>Create a step-by-step conversation flow that guides customers through ordering, collecting information, and more.</p>
+			<button class="btn btn-primary" onclick={openNewStep}>+ Create First Step</button>
+		</div>
+	{:else}
+		<div class="flow-info">
+			<div class="flow-stat"><span class="flow-stat-label">Steps</span><span class="flow-stat-value">{sortedSteps.length}</span></div>
+			<div class="flow-stat"><span class="flow-stat-label">Variables</span><span class="flow-stat-value">{sortedSteps.filter(s => s.input_variable).length}</span></div>
+			<div class="flow-stat"><span class="flow-stat-label">Branches</span><span class="flow-stat-value">{sortedSteps.filter(s => s.step_type === 'button_choice').length}</span></div>
+		</div>
+
+		<div class="flow-visualizer">
+			<!-- Start node -->
+			<div class="flow-start">
+				<span class="flow-node-icon"></span>
+				<span>Start</span>
+			</div>
+			<div class="flow-connector-line"></div>
+
+			{#each sortedSteps as step, i}
+				<div class="flow-step" class:step-auto={step.step_type === 'auto'} class:step-button={step.step_type === 'button_choice'}>
+					<div class="step-left">
+						<button class="step-move" onclick={() => moveStep(step, -1)} disabled={i === 0} title="Move up">↑</button>
+						<button class="step-move" onclick={() => moveStep(step, 1)} disabled={i === sortedSteps.length - 1} title="Move down">↓</button>
+					</div>
+					<div class="step-number">{i + 1}</div>
+					<div class="step-content">
+						<div class="step-header">
+							<span class="step-label">{step.step_label || step.step_key}</span>
+							<div class="step-badges">
+								<span class="step-type-badge">{step.step_type.replace('_', ' ')}</span>
+								{#if step.input_variable}
+									<span class="step-var-badge"> {step.input_variable}</span>
+								{/if}
+							</div>
+						</div>
+						{#if step.prompt_message}
+							<div class="step-preview">
+								<div class="preview-bubble bot">{step.prompt_message}</div>
+							</div>
+						{/if}
+						{#if step.step_type === 'button_choice' && step.button_choices?.length}
+							<div class="step-choices">
+								{#each step.button_choices as choice}
+									<span class="choice-chip">{choice.label || '?'}</span>
+								{/each}
+							</div>
+						{/if}
+						<div class="step-footer">
+							{#if getNextStepName(step)}
+								<span class="step-next">→ {getNextStepName(step)}</span>
+							{:else}
+								<span class="step-end"> End (create order)</span>
+							{/if}
+						</div>
+					</div>
+					<div class="step-actions">
+						<button class="btn-icon" onclick={() => editStep(step)} title="Edit"></button>
+						<button class="btn-icon danger" onclick={() => promptDelete(step.id)} title="Delete"></button>
+					</div>
+				</div>
+				{#if i < sortedSteps.length - 1}
+					<div class="flow-connector-line"></div>
+				{/if}
+			{/each}
+
+			<!-- End node -->
+			<div class="flow-connector-line"></div>
+			<div class="flow-end">
+				<span class="flow-node-icon"></span>
+				<span>End</span>
+			</div>
+		</div>
+	{/if}
+</div>
+
+{#if showTestMode}
+	<div class="modal-overlay" onclick={() => showTestMode = false} role="presentation">
+		<div class="modal modal-test">
+			<div class="modal-header">
+				<h3> Test Bot Flow</h3>
+				<button class="btn-icon" onclick={() => showTestMode = false}></button>
+			</div>
+			<div class="test-container">
+				<div class="test-log">
+					{#each testLog as entry}
+						<div class="test-msg test-{entry.type}">
+							<span class="test-sender">{entry.type === 'bot' ? ' Bot' : entry.type === 'user' ? ' You' : ''}</span>
+							<div class="test-text">{entry.text}</div>
+						</div>
+					{:else}
+						<div class="test-empty">Starting test... First bot message will appear above.</div>
+					{/each}
+				</div>
+				<div class="test-input">
+					<input type="text" bind:value={testInput} placeholder="Type your reply..." onkeydown={(e) => e.key === 'Enter' && submitTestInput()} />
+					<button class="btn btn-primary btn-sm" onclick={submitTestInput}>Send</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showForm}
+	<div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) { showForm = false; editingStep = null; } }} role="presentation">
+		<div class="modal">
+			<div class="modal-header">
+				<h3>{editingStep ? 'Edit Step' : 'Add Step'}</h3>
+				<button class="btn-icon" onclick={() => { showForm = false; editingStep = null }}></button>
+			</div>
+			<form onsubmit={e => { e.preventDefault(); addStep(); }}>
+				<div class="form-grid">
+					<div class="form-group">
+						<label for="bf-key">Step Key</label>
+						<input id="bf-key" type="text" bind:value={newStep.stepKey} placeholder="ask_name" required />
+					</div>
+					<div class="form-group">
+						<label for="bf-label">Label</label>
+						<input id="bf-label" type="text" bind:value={newStep.stepLabel} placeholder="Ask for Name" />
+					</div>
+				</div>
+				<div class="form-grid">
+					<div class="form-group">
+						<label for="bf-type">Type</label>
+						<select id="bf-type" bind:value={newStep.stepType}>
+							<option value="text_input">Text Input</option>
+							<option value="button_choice">Button Choice</option>
+							<option value="auto">Auto (no input)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label for="bf-var">Input Variable</label>
+						<input id="bf-var" type="text" bind:value={newStep.inputVariable} placeholder="customer_name" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="bf-msg">Prompt Message</label>
+					<textarea id="bf-msg" bind:value={newStep.promptMessage} placeholder="What should the bot say?" rows="3"></textarea>
+				</div>
+
+				{#if newStep.stepType === 'button_choice'}
+					<div class="form-group">
+						<label>Button Choices</label>
+						{#each newStep.buttonChoices as choice, ci}
+							<div class="choice-row">
+								<input type="text" bind:value={choice.label} placeholder="Button label" />
+								<input type="text" bind:value={choice.next_step} placeholder="Next step key" />
+								<button type="button" class="btn-icon danger" onclick={() => removeButtonChoice(ci)}></button>
+							</div>
+						{/each}
+						<button type="button" class="btn btn-ghost btn-sm" onclick={addButtonChoice}>+ Add Choice</button>
+					</div>
+				{/if}
+
+				<div class="form-group">
+					<label for="bf-next">Next Step Key</label>
+					<input id="bf-next" type="text" bind:value={newStep.nextStep} placeholder="ask_scent (leave empty for end)" />
+					<span class="form-hint">Leave empty to end the flow and create an order</span>
+				</div>
+
+				<div class="form-actions">
+					<button type="button" class="btn btn-ghost" onclick={() => { showForm = false; editingStep = null }}>Cancel</button>
+					<button type="submit" class="btn btn-primary">{editingStep ? 'Save Changes' : 'Add Step'}</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
+<style>
+	.page { padding: 24px 32px; max-width: 900px; margin: 0 auto; }
+	.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+	.breadcrumb { display: flex; align-items: center; gap: 8px; }
+	.breadcrumb-icon { font-size: 20px; }
+	.breadcrumb h1 { font-size: 24px; font-weight: 600; }
+	.step-count { font-size: 13px; color: var(--text-secondary); background: var(--surface-hover); padding: 2px 8px; border-radius: 10px; }
+	.page-actions { display: flex; gap: 8px; }
+
+	.flow-info { display: flex; gap: 16px; margin-bottom: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; }
+	.flow-stat { display: flex; flex-direction: column; gap: 2px; }
+	.flow-stat-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; }
+	.flow-stat-value { font-size: 18px; font-weight: 600; }
+
+	.empty-hero { text-align: center; padding: 64px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+	.empty-hero .empty-icon { font-size: 56px; margin-bottom: 16px; }
+	.empty-hero h2 { font-size: 20px; margin-bottom: 8px; }
+	.empty-hero p { color: var(--text-secondary); max-width: 400px; margin: 0 auto 20px; line-height: 1.5; }
+
+	.flow-visualizer { display: flex; flex-direction: column; align-items: center; }
+	.flow-connector-line { width: 2px; height: 20px; background: var(--border); }
+	.flow-start, .flow-end {
+		display: flex; align-items: center; gap: 8px; padding: 8px 20px;
+		border-radius: 20px; font-size: 13px; font-weight: 500;
+		background: var(--surface); border: 1px solid var(--border);
+	}
+	.flow-node-icon { font-size: 14px; }
+	.flow-end { background: var(--green-bg, #dcfce7); color: var(--green, #16a34a); }
+
+	.flow-step {
+		width: 100%; background: var(--surface); border: 1px solid var(--border);
+		border-radius: 10px; padding: 16px 20px; display: flex; gap: 12px;
+		align-items: flex-start; transition: all 0.15s;
+	}
+	.flow-step:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+	.flow-step.step-auto { border-left: 3px solid var(--info, #06b6d4); }
+	.flow-step.step-button { border-left: 3px solid var(--warning, #f59e0b); }
+
+	.step-left { display: flex; flex-direction: column; gap: 2px; }
+	.step-move { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--text-tertiary); padding: 2px 4px; border-radius: 3px; }
+	.step-move:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
+	.step-move:disabled { opacity: 0.2; cursor: default; }
+
+	.step-number { width: 32px; height: 32px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; flex-shrink: 0; }
+	.step-content { flex: 1; min-width: 0; }
+	.step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+	.step-label { font-weight: 600; font-size: 14px; }
+	.step-badges { display: flex; gap: 6px; }
+	.step-type-badge { background: var(--surface-hover); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: var(--text-secondary); text-transform: capitalize; }
+	.step-var-badge { background: var(--accent-bg); color: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-family: monospace; }
+
+	.step-preview { margin-bottom: 8px; }
+	.preview-bubble { padding: 8px 12px; border-radius: 10px; font-size: 13px; max-width: 80%; line-height: 1.4; }
+	.preview-bubble.bot { background: var(--accent); color: white; border-bottom-left-radius: 4px; }
+
+	.step-choices { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+	.choice-chip { padding: 4px 10px; border: 1px solid var(--border); border-radius: 16px; font-size: 12px; background: var(--bg); }
+
+	.step-footer { display: flex; align-items: center; gap: 8px; }
+	.step-next { font-size: 12px; color: var(--text-secondary); }
+	.step-end { font-size: 12px; color: var(--green, #16a34a); font-weight: 500; }
+
+	.step-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+	/* Test mode */
+	.modal-test { width: 500px; height: 600px; display: flex; flex-direction: column; }
+	.test-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+	.test-log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+	.test-msg { max-width: 80%; }
+	.test-bot { align-self: flex-start; }
+	.test-user { align-self: flex-end; }
+	.test-system { align-self: center; font-size: 12px; color: var(--text-tertiary); }
+	.test-sender { font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 2px; }
+	.test-text { padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; }
+	.test-bot .test-text { background: var(--accent); color: white; }
+	.test-user .test-text { background: var(--surface); border: 1px solid var(--border); }
+	.test-system .test-text { background: var(--surface-hover); color: var(--text-secondary); }
+	.test-empty { text-align: center; padding: 20px; color: var(--text-tertiary); font-size: 13px; }
+	.test-input { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+	.test-input input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--bg); color: var(--text); }
+	.test-input input:focus { outline: none; border-color: var(--accent); }
+
+	.empty-state { text-align: center; padding: 64px; color: var(--text-secondary); }
+	.empty-icon { font-size: 48px; margin-bottom: 12px; }
+	.loading-state { text-align: center; padding: 64px; color: var(--text-secondary); }
+
+	.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; }
+	.btn-primary { background: var(--accent); color: white; }
+	.btn-primary:hover { background: var(--accent-hover); }
+	.btn-ghost { background: transparent; color: var(--text-secondary); }
+	.btn-ghost:hover { background: var(--surface-hover); color: var(--text); }
+	.btn-sm { padding: 5px 12px; font-size: 13px; }
+	.btn-icon { background: none; border: none; cursor: pointer; padding: 4px; font-size: 14px; flex-shrink: 0; border-radius: var(--radius-sm); }
+	.btn-icon:hover { background: var(--surface-hover); }
+	.btn-icon.danger:hover { color: var(--red); }
+
+	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+	.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 560px; max-width: 95vw; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
+	.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+	.modal-header h3 { font-size: 16px; font-weight: 600; }
+
+	.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px 20px; }
+	.form-group { padding: 0 20px; margin-bottom: 12px; }
+	.form-grid .form-group { padding: 0; }
+	.form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; }
+	.form-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+	.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; background: var(--bg); color: var(--text); font-family: var(--font); }
+	.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+	.form-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border); }
+
+	.choice-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+	.choice-row input { flex: 1; }
+
+	@media (max-width: 768px) {
+		.page { padding: 16px; }
+		.flow-step { flex-wrap: wrap; }
+	}
+</style>
