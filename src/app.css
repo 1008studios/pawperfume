@@ -261,3 +261,20 @@ html, body {
 		padding: 0;
 	}
 }
+
+/* Dark mode scrollbar contrast override */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.2);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.35);
+}
+
+/* Tactile micro-interaction scale animation on click */
+button:active, 
+.btn:active, 
+.btn-icon:active, 
+.nav-item:active {
+	transform: scale(0.97);
+	transition: transform 50ms ease;
+}

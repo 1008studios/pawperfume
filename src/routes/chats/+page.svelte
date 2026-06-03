@@ -343,7 +343,9 @@
 					<div class="info-panel">
 						<div class="info-panel-header">
 							<h3>Conversation Info</h3>
-							<button class="btn-icon" onclick={() => showInfoPanel = false}></button>
+							<button class="btn-icon" onclick={() => showInfoPanel = false} title="Close info">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+							</button>
 						</div>
 						<div class="info-section">
 							<div class="info-avatar-large">
@@ -388,7 +390,9 @@
 				<div class="quick-replies-panel">
 					<div class="qr-header">
 						<span>Quick Replies</span>
-						<button class="btn-icon" onclick={() => showQuickRepliesPanel = false}></button>
+						<button class="btn-icon" onclick={() => showQuickRepliesPanel = false} title="Close quick replies">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+						</button>
 					</div>
 					<div class="qr-list">
 						{#each quickReplies as qr}
@@ -404,7 +408,9 @@
 			{#if attachedPreview}
 				<div class="attachment-preview">
 					<img src={attachedPreview} alt="attachment preview" />
-					<button class="btn-icon danger" onclick={removeAttachment}></button>
+					<button class="btn-icon danger" onclick={removeAttachment} title="Discard attachment">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+					</button>
 				</div>
 			{/if}
 
@@ -512,7 +518,7 @@
 		color: white; display: flex; align-items: center; justify-content: center;
 		font-weight: 600; font-size: 15px; flex-shrink: 0; position: relative;
 	}
-	.conv-avatar.large { width: 36px; height: 36px; font-size: 14px; }
+	.conv-avatar.large { width: 44px; height: 44px; font-size: 16px; }
 
 	.conv-avatar.online::after {
 		content: ''; position: absolute; bottom: 1px; right: 1px;
@@ -561,6 +567,8 @@
 	.message { display: flex; gap: 8px; align-items: flex-end; }
 	.message.from-user { justify-content: flex-start; }
 	.message:not(.from-user) { justify-content: flex-end; flex-direction: row-reverse; }
+	.message:not(.from-user) .message-wrapper { align-items: flex-end; }
+	.message:not(.from-user) .message-meta { justify-content: flex-end; }
 
 	.message-avatar {
 		width: 28px; height: 28px; border-radius: 50%; background: var(--accent);

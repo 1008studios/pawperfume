@@ -61,7 +61,7 @@
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
 	title="Delete This FAQ?"
-	message="Hindi na ito ma-sasagot ng bot mo sa customers. Pwede mo naman i-add ulit anytime."
+	message="Your bot will no longer use this FAQ to answer customers, but you can add it back anytime."
 	confirmText="Yes, Delete"
 	cancelText="Cancel"
 	variant="danger"

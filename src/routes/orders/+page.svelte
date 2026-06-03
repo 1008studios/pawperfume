@@ -205,10 +205,10 @@
 	}
 
 	async function bulkDelete() {
-		if (!confirm(`${selectedIds.size} orders, delete na natin? Hindi na mababalik yan.`)) return;
+		if (!confirm(`Are you sure you want to delete ${selectedIds.size} orders? This cannot be undone.`)) return;
 		try {
 			for (const id of selectedIds) { await api.deleteOrder(id); }
-			showToast(`${selectedIds.size} orders, deleted na. Sana sure ka! 🗑️`, 'success');
+			showToast(`${selectedIds.size} orders deleted.`, 'success');
 			selectedIds = new Set();
 			showBulkActions = false;
 			await loadOrders();
@@ -219,7 +219,7 @@
 		if (!bulkStatus) return;
 		try {
 			for (const id of selectedIds) { await api.updateOrder(id, { status: bulkStatus }); }
-			showToast(`${selectedIds.size} orders, updated na to ${bulkStatus}!`, 'success');
+			showToast(`${selectedIds.size} orders updated to ${bulkStatus}.`, 'success');
 			selectedIds = new Set();
 			showBulkActions = false;
 			bulkStatus = '';
@@ -230,7 +230,7 @@
 	async function quickStatusChange(order: Order, newStatus: string) {
 		try {
 			await api.updateOrder(order.id, { status: newStatus });
-			showToast(`Order #${order.id} → ${newStatus} na!`, 'success');
+			showToast(`Order #${order.id} updated to ${newStatus}.`, 'success');
 			await loadOrders();
 		} catch { showToast('Could not update status. Please try again.', 'error'); }
 	}
@@ -250,7 +250,7 @@
 					notes: editingOrder.notes
 				});
 			}
-			showToast(editingOrder.id ? `Ayos! Updated na si Order #${editingOrder.id}.` : 'Ayos! Bagong order, nasa list na! 📋', 'success');
+			showToast(editingOrder.id ? `Order #${editingOrder.id} updated successfully.` : 'Order created successfully. 📋', 'success');
 			editingOrder = null;
 			await loadOrders();
 		} catch (err) { showToast('Could not save order. Check your fields and try again.', 'error'); }

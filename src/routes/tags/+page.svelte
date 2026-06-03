@@ -61,7 +61,7 @@
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
 	title="Delete This Tag?"
-	message="Ma-remove ito sa tags mo. Any items na naka-tag dito ay ma-u-untag."
+	message="This tag will be deleted. Any items with this tag will be untagged."
 	confirmText="Yes, Delete"
 	cancelText="Cancel"
 	variant="danger"

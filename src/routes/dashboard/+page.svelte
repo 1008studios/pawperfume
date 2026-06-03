@@ -154,7 +154,7 @@
 <div class="page">
 	<header class="page-header">
 		<div class="breadcrumb">
-			<span class="breadcrumb-icon"></span>
+			<span class="breadcrumb-icon">📊</span>
 			<h1>Dashboard</h1>
 			<span class="refresh-time">Updated {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
 		</div>
@@ -242,7 +242,7 @@
 				<div class="activity-list">
 					{#each recentActivity as act}
 						<div class="activity-item">
-							<span class="activity-icon">{act.type === 'order' ? '' : ''}</span>
+							<span class="activity-icon">{act.type === 'order' ? '📦' : '💬'}</span>
 							<div class="activity-content">
 								<div class="activity-text">{act.text}</div>
 								<div class="activity-time">{timeAgo(act.time)}</div>
@@ -321,7 +321,7 @@
 
 	.date-range-group { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 	.range-btn { padding: 5px 12px; border: none; background: var(--surface); font-size: 12px; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
-	.range-btn.active { background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+	.range-btn.active { background: var(--accent); color: white; font-weight: 600; }
 	.range-btn:hover { background: var(--surface-hover); }
 
 	.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }

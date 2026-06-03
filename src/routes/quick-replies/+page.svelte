@@ -66,7 +66,7 @@
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
 	title="Delete This Quick Reply?"
-	message="Hindi mo na ito ma-gagamit sa chats. Pwede ka mag-add ulit kung kailangan mo."
+	message="This quick reply will no longer be available in chats, but you can add it back later if needed."
 	confirmText="Yes, Delete"
 	cancelText="Cancel"
 	variant="danger"

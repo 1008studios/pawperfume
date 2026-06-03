@@ -3,7 +3,7 @@
 		<div class="login-header">
 			<span class="login-icon">🧴</span>
 			<h1>PawPerfume</h1>
-			<p>Tuloy ka, boss! 👋</p>
+			<p>Welcome back to your dashboard</p>
 		</div>
 		<form onsubmit={handleLogin}>
 			<div class="form-group">
@@ -49,7 +49,7 @@
 			const res = await api.login(password);
 			if (res.ok && res.token) {
 				setToken(res.token);
-				showToast('Welcome back, boss! Ready na ba tayo? 🐾', 'success');
+				showToast('Welcome back!', 'success');
 				goto('/dashboard');
 			} else {
 				error = 'Invalid password. Please try again.';

@@ -211,7 +211,7 @@
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
 	title="Delete This Bot Flow Step?"
-	message="Ma-remove ito sa bot flow mo. Kung may next step na naka-link dito, baka ma-disrupt ang flow."
+	message="This will remove the step from your bot flow. If another step links to this, it may disrupt the conversation flow."
 	confirmText="Yes, Delete"
 	cancelText="Cancel"
 	variant="danger"
