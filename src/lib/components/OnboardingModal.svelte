@@ -262,10 +262,10 @@
 
 	@keyframes bounce {
 		0%, 100% {
-			transform: translateY(0);
+			transform: translateY(0) scale(1);
 		}
 		50% {
-			transform: translateY(-10px);
+			transform: translateY(-4px) scale(1.02);
 		}
 	}
 

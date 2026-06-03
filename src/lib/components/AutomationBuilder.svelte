@@ -434,7 +434,7 @@
 	}
 
 	.port:hover {
-		transform: scale(1.3);
+		transform: scale(1.15);
 		border-color: var(--primary);
 		background: var(--primary);
 	}

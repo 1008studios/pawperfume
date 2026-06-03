@@ -51,10 +51,10 @@
 	@keyframes typing {
 		0%, 60%, 100% {
 			transform: translateY(0);
-			opacity: 0.7;
+			opacity: 0.4;
 		}
 		30% {
-			transform: translateY(-10px);
+			transform: translateY(-3px);
 			opacity: 1;
 		}
 	}

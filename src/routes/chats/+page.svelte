@@ -609,7 +609,16 @@
 	}
 	.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
 	.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-	@keyframes typingBounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+	@keyframes typingBounce {
+		0%, 80%, 100% {
+			transform: translateY(0);
+			opacity: 0.4;
+		}
+		40% {
+			transform: translateY(-3px);
+			opacity: 1;
+		}
+	}
 
 	.info-panel {
 		width: 280px; border-left: 1px solid var(--border); background: var(--surface);
