@@ -14,6 +14,7 @@
 	let testStepIndex = $state(0);
 	let testInput = $state('');
 	let testLog = $state<Array<{ type: 'bot' | 'user' | 'system'; text: string }>>([]);
+	let testVariables = $state<Record<string, string>>({});
 
 	let newStep = $state({
 		stepKey: '',
@@ -135,6 +136,7 @@
 		testStepIndex = 0;
 		testInput = '';
 		testLog = [];
+		testVariables = {};
 		showTestMode = true;
 		if (sortedSteps.length > 0) {
 			const firstStep = sortedSteps[0];
@@ -142,41 +144,104 @@
 				testLog.push({ type: 'bot', text: firstStep.prompt_message });
 			}
 			if (firstStep.step_type === 'auto') {
-				testLog.push({ type: 'system', text: '(Auto step - no input needed)' });
+				testLog.push({ type: 'system', text: '(Auto step)' });
+				setTimeout(() => {
+					executeStepTransition(firstStep, '');
+				}, 1000);
 			}
 		}
 	}
 
-	function submitTestInput() {
-		if (!testInput.trim() && sortedSteps[testStepIndex]?.step_type !== 'auto') return;
-		const currentStep = sortedSteps[testStepIndex];
-		if (!currentStep) return;
-
-		if (testInput.trim()) {
-			testLog.push({ type: 'user', text: testInput });
+	function executeStepTransition(currentStep: BotFlowStep, userInput: string) {
+		if (currentStep.input_variable) {
+			testVariables[currentStep.input_variable] = userInput;
+			testLog.push({ type: 'system', text: `Captured variable {${currentStep.input_variable}} = "${userInput}"` });
 		}
-		testInput = '';
 
-		if (currentStep.next_step) {
-			const nextIdx = sortedSteps.findIndex(s => s.step_key === currentStep.next_step);
+		let nextStepKey: string | null = null;
+		if (currentStep.step_type === 'button_choice') {
+			const choices = currentStep.button_choices || [];
+			const match = choices.find(c => c.label.toLowerCase() === userInput.toLowerCase());
+			nextStepKey = match ? match.next_step : currentStep.next_step;
+		} else {
+			nextStepKey = currentStep.next_step;
+		}
+
+		if (nextStepKey) {
+			const nextIdx = sortedSteps.findIndex(s => s.step_key === nextStepKey);
 			if (nextIdx >= 0) {
 				testStepIndex = nextIdx;
 				const nextStep = sortedSteps[nextIdx];
-				if (nextStep.prompt_message) {
-					setTimeout(() => {
-						testLog.push({ type: 'bot', text: nextStep.prompt_message || '' });
-						testLog = [...testLog];
-						if (nextStep.step_type === 'auto' && nextStep.next_step) {
-							setTimeout(() => {
-								testLog.push({ type: 'system', text: '(Auto step)' });
-								testLog = [...testLog];
-							}, 500);
-						}
-					}, 300);
-				}
+				setTimeout(() => {
+					if (nextStep.prompt_message) {
+						testLog.push({ type: 'bot', text: nextStep.prompt_message });
+					}
+					testLog = [...testLog];
+					if (nextStep.step_type === 'auto') {
+						testLog.push({ type: 'system', text: '(Auto step)' });
+						setTimeout(() => {
+							executeStepTransition(nextStep, '');
+						}, 1000);
+					}
+				}, 600);
+			} else {
+				testLog.push({ type: 'system', text: `Flow ended: step "${nextStepKey}" not found.` });
 			}
 		} else {
-			testLog.push({ type: 'system', text: ' Flow complete! An order would be created here.' });
+			testLog.push({ type: 'system', text: 'Flow complete! An order would be created here.' });
+		}
+		testLog = [...testLog];
+	}
+
+	function submitTestInput() {
+		const currentStep = sortedSteps[testStepIndex];
+		if (!currentStep) return;
+		const text = testInput.trim();
+		if (!text && currentStep.step_type !== 'auto') return;
+
+		if (text) {
+			testLog.push({ type: 'user', text });
+		}
+		testInput = '';
+		testLog = [...testLog];
+		executeStepTransition(currentStep, text);
+	}
+
+	function selectButtonChoice(choice: { label: string; next_step: string }) {
+		testLog.push({ type: 'user', text: choice.label });
+		testLog = [...testLog];
+		
+		const currentStep = sortedSteps[testStepIndex];
+		if (!currentStep) return;
+
+		if (currentStep.input_variable) {
+			testVariables[currentStep.input_variable] = choice.label;
+			testLog.push({ type: 'system', text: `Captured variable {${currentStep.input_variable}} = "${choice.label}"` });
+		}
+
+		const nextStepKey = choice.next_step || currentStep.next_step;
+		if (nextStepKey) {
+			const nextIdx = sortedSteps.findIndex(s => s.step_key === nextStepKey);
+			if (nextIdx >= 0) {
+				testStepIndex = nextIdx;
+				const nextStep = sortedSteps[nextIdx];
+				setTimeout(() => {
+					if (nextStep.prompt_message) {
+						testLog.push({ type: 'bot', text: nextStep.prompt_message });
+					}
+					testLog = [...testLog];
+					if (nextStep.step_type === 'auto') {
+						testLog.push({ type: 'system', text: '(Auto step)' });
+						setTimeout(() => {
+							executeStepTransition(nextStep, '');
+						}, 1000);
+					}
+				}, 600);
+			} else {
+				testLog.push({ type: 'system', text: `Flow ended: step "${nextStepKey}" not found.` });
+			}
+		} else {
+			testLog.push({ type: 'system', text: 'Flow complete! An order would be created here.' });
 		}
 		testLog = [...testLog];
 	}
@@ -317,25 +382,61 @@
 
 {#if showTestMode}
 	<div class="modal-overlay" onclick={() => showTestMode = false} role="presentation">
-		<div class="modal modal-test">
+		<div class="modal modal-test" style="width: 760px; max-width: 95vw; height: 600px; display: flex; flex-direction: column;">
 			<div class="modal-header">
-				<h3> Test Bot Flow</h3>
-				<button class="btn-icon" onclick={() => showTestMode = false}></button>
+				<h3>Test Bot Flow</h3>
+				<button class="btn-icon" onclick={() => showTestMode = false} style="font-size: 20px; font-weight: 600; line-height: 1;">×</button>
 			</div>
-			<div class="test-container">
-				<div class="test-log">
-					{#each testLog as entry}
-						<div class="test-msg test-{entry.type}">
-							<span class="test-sender">{entry.type === 'bot' ? ' Bot' : entry.type === 'user' ? ' You' : ''}</span>
-							<div class="test-text">{entry.text}</div>
+			
+			<div class="test-container" style="display: flex; flex: 1; overflow: hidden; background: var(--bg);">
+				<!-- Chat Section -->
+				<div style="display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100%;">
+					<div class="test-log" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+						{#each testLog as entry}
+							<div class="test-msg test-{entry.type}" style="max-width: 85%; display: flex; flex-direction: column; align-self: {entry.type === 'user' ? 'flex-end' : entry.type === 'system' ? 'center' : 'flex-start'};">
+								<span class="test-sender" style="font-size: 10px; font-weight: 600; color: var(--text-tertiary); margin-bottom: 2px; align-self: {entry.type === 'user' ? 'flex-end' : 'flex-start'};">
+									{entry.type === 'bot' ? '🤖 Bot' : entry.type === 'user' ? '👤 Customer' : '⚙️ System'}
+								</span>
+								<div class="test-text" style="padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; background: {entry.type === 'user' ? 'var(--accent)' : entry.type === 'system' ? 'var(--surface-hover)' : 'var(--surface)'}; color: {entry.type === 'user' ? 'white' : 'var(--text)'}; border: {entry.type !== 'user' ? '1px solid var(--border)' : 'none'};">
+									{entry.text}
+								</div>
+							</div>
+						{:else}
+							<div class="test-empty" style="text-align: center; padding: 20px; color: var(--text-tertiary);">Starting flow simulation...</div>
+						{/each}
+					</div>
+					
+					{#if sortedSteps[testStepIndex]?.step_type === 'button_choice'}
+						<div class="test-choices-container" style="display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px; border-top: 1px solid var(--border); justify-content: center; background: var(--surface);">
+							{#each sortedSteps[testStepIndex]?.button_choices || [] as choice}
+								<button class="btn btn-ghost" onclick={() => selectButtonChoice(choice)} style="border: 1px solid var(--accent); color: var(--accent); border-radius: 16px; background: var(--accent-bg); padding: 4px 12px; font-size: 12px;">
+									{choice.label}
+								</button>
+							{/each}
 						</div>
-					{:else}
-						<div class="test-empty">Starting test... First bot message will appear above.</div>
-					{/each}
+					{/if}
+
+					<div class="test-input" style="display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface);">
+						<input type="text" bind:value={testInput} placeholder={sortedSteps[testStepIndex]?.step_type === 'button_choice' ? 'Select a choice above or type here...' : 'Type your reply...'} onkeydown={(e) => e.key === 'Enter' && submitTestInput()} style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--bg); color: var(--text);" />
+						<button class="btn btn-primary btn-sm" onclick={submitTestInput}>Send</button>
+					</div>
 				</div>
-				<div class="test-input">
-					<input type="text" bind:value={testInput} placeholder="Type your reply..." onkeydown={(e) => e.key === 'Enter' && submitTestInput()} />
-					<button class="btn btn-primary btn-sm" onclick={submitTestInput}>Send</button>
+				
+				<!-- Live Variables Sidebar -->
+				<div style="width: 240px; border-left: 1px solid var(--border); background: var(--surface); padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
+					<h4 style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; letter-spacing: 0.5px;">Live Flow Variables</h4>
+					
+					<div style="display: flex; flex-direction: column; gap: 8px;">
+						{#each sortedSteps.filter(s => s.input_variable) as step}
+							<div style="background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px;">
+								<div style="font-family: monospace; color: var(--accent); font-weight: 600; margin-bottom: 2px;">{step.input_variable}</div>
+								<div style="color: var(--text-tertiary); font-size: 10px; margin-bottom: 4px; font-style: italic;">From: {step.step_label || step.step_key}</div>
+								<div style="font-weight: 500; color: var(--text); min-height: 16px; background: var(--surface); padding: 2px 6px; border-radius: 4px; word-break: break-all;">
+									{testVariables[step.input_variable || ''] || '—'}
+								</div>
+							</div>
+						{/each}
+					</div>
 				</div>
 			</div>
 		</div>

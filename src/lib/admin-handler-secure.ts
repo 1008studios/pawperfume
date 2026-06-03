@@ -320,6 +320,64 @@ export async function handleAdmin(path: string, method: string, request: Request
 			return json({ ok: true });
 		}
 
+		const bfMatch = route.match(/^bot-flow\/(\d+)$/);
+		if (bfMatch && method === 'PUT') {
+			const stepId = parseInt(bfMatch[1]);
+			if (isNaN(stepId)) return json({ error: 'Invalid step ID' }, { status: 400 });
+			
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			const fieldMap: Record<string, string> = {
+				stepKey: 'step_key', step_key: 'step_key',
+				stepLabel: 'step_label', step_label: 'step_label',
+				stepType: 'step_type', step_type: 'step_type',
+				promptMessage: 'prompt_message', prompt_message: 'prompt_message',
+				nextStep: 'next_step', next_step: 'next_step',
+				inputVariable: 'input_variable', input_variable: 'input_variable',
+				sortOrder: 'sort_order', sort_order: 'sort_order',
+				buttonChoices: 'button_choices', button_choices: 'button_choices'
+			};
+			
+			for (const [bodyKey, dbCol] of Object.entries(fieldMap)) {
+				if (body[bodyKey] !== undefined) {
+					sets.push(`${dbCol} = $${n++}`);
+					vals.push(dbCol === 'button_choices' ? (typeof body[bodyKey] === 'string' ? body[bodyKey] : JSON.stringify(body[bodyKey])) : body[bodyKey]);
+				}
+			}
+			
+			if (sets.length) {
+				vals.push(stepId);
+				await db(`UPDATE bot_flow_steps SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
+		const cfMatch = route.match(/^custom-fields\/(\d+)$/);
+		if (cfMatch && method === 'PUT') {
+			const id = parseInt(cfMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			
+			if (body.field_key !== undefined) { sets.push(`field_key = $${n++}`); vals.push(body.field_key); }
+			if (body.field_label !== undefined) { sets.push(`field_label = $${n++}`); vals.push(body.field_label); }
+			if (body.field_type !== undefined) { sets.push(`field_type = $${n++}`); vals.push(body.field_type); }
+			if (body.field_options !== undefined) { 
+				sets.push(`field_options = $${n++}`); 
+				vals.push(typeof body.field_options === 'string' ? body.field_options : JSON.stringify(body.field_options)); 
+			}
+			if (body.sort_order !== undefined) { sets.push(`sort_order = $${n++}`); vals.push(Number(body.sort_order)); }
+			
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE tenant_custom_fields SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
 		// POST routes - FIX: All parameterized
 		if (method === 'POST') {
 			// Rate limit POST operations

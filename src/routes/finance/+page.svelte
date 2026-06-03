@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, fmtPeso, showToast, downloadCSV } from '$lib/api';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -230,11 +230,11 @@ import type { LedgerEntry } from '$lib/types';
 			<table class="table">
 				<thead>
 					<tr>
-						<th onclick={() => { sortField = 'date'; sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }} style="cursor:pointer">Date {sortField === 'date' ? (sortDir === 'asc' ? 'â†‘' : 'â†“') : ''}</th>
+						<th onclick={() => { sortField = 'date'; sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }} style="cursor:pointer">Date {sortField === 'date' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</th>
 						<th>Description</th>
 						<th>Category</th>
 						<th>Type</th>
-						<th onclick={() => { sortField = 'amount'; sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }} style="cursor:pointer">Amount {sortField === 'amount' ? (sortDir === 'asc' ? 'â†‘' : 'â†“') : ''}</th>
+						<th onclick={() => { sortField = 'amount'; sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }} style="cursor:pointer">Amount {sortField === 'amount' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</th>
 						<th></th>
 					</tr>
 				</thead>
@@ -242,8 +242,8 @@ import type { LedgerEntry } from '$lib/types';
 					{#each filteredEntries as entry}
 						<tr>
 							<td>{entry.date || ''}</td>
-							<td>{entry.description || 'â€”'}</td>
-							<td>{#if entry.category}<span class="cat-tag">{entry.category}</span>{:else}â€”{/if}</td>
+							<td>{entry.description || '—'}</td>
+							<td>{#if entry.category}<span class="cat-tag">{entry.category}</span>{:else}—{/if}</td>
 							<td><span class="badge badge-{entry.type}">{entry.type}</span></td>
 							<td class="amount" class:text-green={entry.type === 'income'} class:text-red={entry.type === 'expense'}>{fmtPeso(entry.amount)}</td>
 							<td><button class="btn-icon danger" onclick={() => promptDelete(entry.id)}></button></td>
@@ -296,11 +296,11 @@ import type { LedgerEntry } from '$lib/types';
 						<input id="fin-cat" type="text" bind:value={newEntry.category} placeholder="Custom category" />
 					</div>
 					<div class="form-group">
-						<label for="fin-amt">Amount (â‚±)</label>
+						<label for="fin-amt">Amount (₱)</label>
 						<input id="fin-amt" type="number" bind:value={newEntry.amount} min="0" step="0.01" />
 						<div class="preset-amounts">
 							{#each presetAmounts as amt}
-								<button type="button" class="amt-chip" onclick={() => newEntry.amount = amt}>â‚±{amt}</button>
+								<button type="button" class="amt-chip" onclick={() => newEntry.amount = amt}>₱{amt}</button>
 							{/each}
 						</div>
 					</div>

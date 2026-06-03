@@ -88,6 +88,7 @@ export const api = {
 
 	customFields: () => request<unknown[]>('/custom-fields'),
 	createCustomField: (data: unknown) => request<{ ok: boolean }>('/custom-fields', 'POST', data),
+	updateCustomField: (id: number, data: unknown) => request<{ ok: boolean }>(`/custom-fields/${id}`, 'PUT', data),
 	deleteCustomField: (id: number) => request<{ ok: boolean }>(`/custom-fields/${id}`, 'DELETE'),
 
 	updateTenant: (data: unknown) => request<{ ok: boolean }>('/tenants', 'PUT', data),

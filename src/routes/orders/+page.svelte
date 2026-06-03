@@ -51,8 +51,8 @@
 
 	onMount(async () => { await loadOrders(); });
 
-	async function loadOrders() {
-		loading = true;
+	async function loadOrders(silent = false) {
+		if (!silent) loading = true;
 		try {
 			const res = await api.orders();
 			orders = res.orders as Order[];
@@ -74,7 +74,7 @@
 		} catch (err) {
 			showToast('Failed to load orders', 'error');
 			console.error(err);
-		} finally { loading = false; }
+		} finally { if (!silent) loading = false; }
 	}
 
 	let visibleColumns = $derived(
@@ -169,18 +169,18 @@
 		if (col.column_key.startsWith('cf_')) {
 			const key = col.column_key.replace('cf_', '');
 			const cf = (typeof order.custom_fields === 'string' ? JSON.parse(order.custom_fields || '{}') : order.custom_fields || {}) as Record<string, unknown>;
-			return String(cf[key] || 'â€”');
+			return String(cf[key] || '—');
 		}
 		switch (col.column_key) {
 			case 'id': return `#${order.id}`;
-			case 'customer_name': return order.customer_name || 'â€”';
+			case 'customer_name': return order.customer_name || '—';
 			case 'amount': return fmtPeso(order.amount);
 			case 'status': return order.status;
 			case 'payment_status': return order.payment_status || 'pending';
 			case 'updated_at': return new Date(order.updated_at).toLocaleDateString();
 			case 'created_at': return new Date(order.created_at).toLocaleDateString();
-			case 'notes': return order.notes || 'â€”';
-			default: return 'â€”';
+			case 'notes': return order.notes || '—';
+			default: return '—';
 		}
 	}
 
@@ -199,7 +199,7 @@
 		try {
 			await api.deleteOrder(deleteOrderId);
 			showToast('Order deleted.', 'success');
-			await loadOrders();
+			await loadOrders(true);
 		} catch (err) { showToast('Could not delete order. Please try again.', 'error'); }
 		finally { showDeleteConfirm = false; deleteOrderId = null; }
 	}
@@ -211,7 +211,7 @@
 			showToast(`${selectedIds.size} orders deleted.`, 'success');
 			selectedIds = new Set();
 			showBulkActions = false;
-			await loadOrders();
+			await loadOrders(true);
 		} catch { showToast('Could not delete orders. Please try again.', 'error'); }
 	}
 
@@ -223,7 +223,7 @@
 			selectedIds = new Set();
 			showBulkActions = false;
 			bulkStatus = '';
-			await loadOrders();
+			await loadOrders(true);
 		} catch { showToast('Could not update orders. Please try again.', 'error'); }
 	}
 
@@ -231,7 +231,7 @@
 		try {
 			await api.updateOrder(order.id, { status: newStatus });
 			showToast(`Order #${order.id} updated to ${newStatus}.`, 'success');
-			await loadOrders();
+			await loadOrders(true);
 		} catch { showToast('Could not update status. Please try again.', 'error'); }
 	}
 
@@ -252,7 +252,7 @@
 			}
 			showToast(editingOrder.id ? `Order #${editingOrder.id} updated successfully.` : 'Order created successfully. 📋', 'success');
 			editingOrder = null;
-			await loadOrders();
+			await loadOrders(true);
 		} catch (err) { showToast('Could not save order. Check your fields and try again.', 'error'); }
 	}
 
@@ -305,8 +305,8 @@
 				<input type="text" placeholder="Search orders..." bind:value={searchQuery} />
 			</div>
 			<div class="view-toggle">
-				<button class="view-btn" class:active={viewMode === 'table'} onclick={() => viewMode = 'table'} title="Table view"></button>
-				<button class="view-btn" class:active={viewMode === 'kanban'} onclick={() => viewMode = 'kanban'} title="Kanban view">âŠž</button>
+				<button class="view-btn" class:active={viewMode === 'table'} onclick={() => viewMode = 'table'} title="Table view">☰</button>
+				<button class="view-btn" class:active={viewMode === 'kanban'} onclick={() => viewMode = 'kanban'} title="Kanban view">⊞</button>
 			</div>
 			<button class="btn btn-ghost" onclick={() => showColumnManager = !showColumnManager}>Columns</button>
 			<button class="btn btn-ghost" onclick={exportCSV}>Export CSV</button>
@@ -417,7 +417,7 @@
 						{#each visibleColumns as col}
 							<th onclick={() => toggleSort(col.column_key)}>
 								{col.column_label}
-								{#if sortField === col.column_key}<span class="sort-arrow">{sortDir === 'asc' ? 'â†‘' : 'â†“'}</span>{/if}
+								{#if sortField === col.column_key}<span class="sort-arrow">{sortDir === 'asc' ? '↑' : '↓'}</span>{/if}
 							</th>
 						{/each}
 						<th class="actions-col"></th>
@@ -440,7 +440,7 @@
 									{:else if col.column_key === 'id'}
 										<span class="order-id">#{order.id}</span>
 									{:else if col.column_key === 'customer_name'}
-										<span class="cell-editable" onclick={() => editOrder(order)}>{order.customer_name || 'â€”'}</span>
+										<span class="cell-editable" onclick={() => editOrder(order)}>{order.customer_name || '—'}</span>
 									{:else}
 										<span>{getCellValue(order, col)}</span>
 									{/if}
@@ -471,9 +471,9 @@
 
 		{#if totalPages > 1}
 			<div class="pagination">
-				<button class="btn btn-ghost btn-sm" onclick={() => page = Math.max(1, page - 1)} disabled={page === 1}>â† Prev</button>
+				<button class="btn btn-ghost btn-sm" onclick={() => page = Math.max(1, page - 1)} disabled={page === 1}>← Prev</button>
 				<span class="page-info">Page {page} of {totalPages}</span>
-				<button class="btn btn-ghost btn-sm" onclick={() => page = Math.min(totalPages, page + 1)} disabled={page === totalPages}>Next â†’</button>
+				<button class="btn btn-ghost btn-sm" onclick={() => page = Math.min(totalPages, page + 1)} disabled={page === totalPages}>Next →</button>
 			</div>
 		{/if}
 	{:else}
@@ -529,7 +529,7 @@
 						<input id="order-customer" type="text" bind:value={editingOrder.customer_name} placeholder="Customer name" />
 					</div>
 					<div class="form-group">
-						<label for="order-amount">Amount (â‚±)</label>
+						<label for="order-amount">Amount (₱)</label>
 						<input id="order-amount" type="number" bind:value={editingOrder.amount} min="0" step="0.01" />
 					</div>
 					<div class="form-group">
@@ -553,7 +553,7 @@
 						<label for="cf-{cf.field_key}">{cf.field_label || cf.field_key}</label>
 						{#if cf.field_type === 'select' && cf.field_options?.length}
 							<select id="cf-{cf.field_key}" bind:value={(editingOrder.custom_fields as Record<string, string>)[cf.field_key]}>
-								<option value="">â€”</option>
+								<option value="">—</option>
 								{#each cf.field_options as opt}
 									<option value={opt}>{opt}</option>
 								{/each}

@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, showToast } from '$lib/api';
-	import type { Tenant } from '$lib/types';
+	import type { Tenant, CustomField } from '$lib/types';
 
 	let tenant = $state<Partial<Tenant>>({});
+	let customFields = $state<CustomField[]>([]);
 	let loading = $state(true);
 	let saving = $state(false);
 	let activeSection = $state('brand');
@@ -11,19 +12,32 @@
 	let testingBot = $state(false);
 	let testResult = $state('');
 
+	// Custom fields states
+	let editingCf = $state<CustomField | null>(null);
+	let showNewCfModal = $state(false);
+	let newCfKey = $state('');
+	let newCfLabel = $state('');
+	let newCfType = $state('select');
+	let newCfOptions = $state<string[]>([]);
+	let newOptionText = $state('');
+
 	const sections = [
-		{ key: 'brand', label: 'Brand', icon: '' },
-		{ key: 'ai', label: 'AI Bot', icon: '' },
-		{ key: 'facebook', label: 'Facebook', icon: '' },
-		{ key: 'notifications', label: 'Notifications', icon: '' },
-		{ key: 'system', label: 'System', icon: '' },
+		{ key: 'brand', label: 'Brand', icon: '🏷️' },
+		{ key: 'ai', label: 'AI Bot', icon: '🤖' },
+		{ key: 'facebook', label: 'Facebook', icon: '🔗' },
+		{ key: 'custom_fields', label: 'Custom Fields', icon: '📋' },
+		{ key: 'notifications', label: 'Notifications', icon: '🔔' },
+		{ key: 'system', label: 'System', icon: '⚙️' },
 	];
 
 	onMount(async () => { await loadSettings(); });
 
 	async function loadSettings() {
 		loading = true;
-		try { tenant = await api.tenantConfig(); }
+		try { 
+			tenant = await api.tenantConfig();
+			customFields = await api.customFields() as CustomField[];
+		}
 		catch { showToast('Could not load settings. Please try again.', 'error'); }
 		finally { loading = false; }
 	}
@@ -57,6 +71,78 @@
 		} catch (err) {
 			testResult = 'Failed to test bot: ' + (err as Error).message;
 		} finally { testingBot = false; }
+	}
+
+	function editCf(cf: CustomField) {
+		editingCf = { 
+			...cf, 
+			field_options: Array.isArray(cf.field_options) 
+				? [...cf.field_options] 
+				: (typeof cf.field_options === 'string' ? JSON.parse(cf.field_options || '[]') : [])
+		};
+		newOptionText = '';
+	}
+
+	function addOptionToEditingCf() {
+		if (!newOptionText.trim() || !editingCf) return;
+		if (!editingCf.field_options) editingCf.field_options = [];
+		editingCf.field_options = [...editingCf.field_options, newOptionText.trim()];
+		newOptionText = '';
+	}
+
+	async function saveEditingCf() {
+		if (!editingCf) return;
+		try {
+			await api.updateCustomField(editingCf.id, editingCf);
+			showToast('Custom field updated successfully.', 'success');
+			editingCf = null;
+			customFields = await api.customFields() as CustomField[];
+		} catch {
+			showToast('Could not save custom field.', 'error');
+		}
+	}
+
+	async function removeCf(id: number) {
+		if (!confirm('Are you sure you want to delete this custom field? This may affect existing orders.')) return;
+		try {
+			await api.deleteCustomField(id);
+			showToast('Custom field deleted.', 'success');
+			customFields = await api.customFields() as CustomField[];
+		} catch {
+			showToast('Could not delete custom field.', 'error');
+		}
+	}
+
+	function addOptionToNewCf() {
+		if (!newOptionText.trim()) return;
+		newCfOptions = [...newCfOptions, newOptionText.trim()];
+		newOptionText = '';
+	}
+
+	async function saveNewCf() {
+		if (!newCfKey.trim() || !newCfLabel.trim()) {
+			showToast('Field key and label are required.', 'error');
+			return;
+		}
+		try {
+			await api.createCustomField({
+				fieldKey: newCfKey.trim(),
+				fieldLabel: newCfLabel.trim(),
+				fieldType: newCfType,
+				fieldOptions: newCfOptions,
+				applyTo: 'orders',
+				sortOrder: customFields.length
+			});
+			showToast('Custom field created successfully.', 'success');
+			showNewCfModal = false;
+			newCfKey = '';
+			newCfLabel = '';
+			newCfType = 'select';
+			newCfOptions = [];
+			customFields = await api.customFields() as CustomField[];
+		} catch {
+			showToast('Could not create custom field.', 'error');
+		}
 	}
 </script>
 
@@ -217,6 +303,45 @@
 					</div>
 				</section>
 
+			{:else if activeSection === 'custom_fields'}
+				<section class="settings-section">
+					<h2>Order Custom Fields</h2>
+					<p class="section-desc">Manage custom details collected under orders (e.g. Scent Preferences, Bottle Sizes, Delivery Methods, etc.)</p>
+					
+					<div class="cf-list" style="display:flex; flex-direction:column; gap:16px;">
+						{#each customFields as cf}
+							<div class="cf-card" style="border: 1px solid var(--border); border-radius: 8px; padding: 16px; background: var(--bg);">
+								<div class="cf-card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+									<div>
+										<strong style="font-size:15px; color:var(--text);">{cf.field_label || cf.field_key}</strong>
+										<code style="font-size:11px; color:var(--text-tertiary); margin-left:8px; background:var(--surface); padding:2px 6px; border-radius:4px;">{cf.field_key}</code>
+									</div>
+									<div style="display:flex; gap:6px;">
+										<button class="btn btn-ghost btn-sm" onclick={() => editCf(cf)}>Edit Options</button>
+										<button class="btn btn-ghost btn-sm text-red" onclick={() => removeCf(cf.id)}>Delete</button>
+									</div>
+								</div>
+								
+								<div class="cf-card-body" style="font-size:13px; color:var(--text-secondary);">
+									<div style="margin-bottom:8px;">Type: <span style="text-transform:capitalize; font-weight:500; color:var(--text);">{cf.field_type}</span></div>
+									{#if cf.field_type === 'select'}
+										<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px;">
+											<span style="color:var(--text-tertiary);">Active Options:</span>
+											{#each cf.field_options || [] as opt}
+												<span style="background:var(--surface); border:1px solid var(--border); padding:2px 8px; border-radius:12px; font-size:12px; color:var(--text);">{opt}</span>
+											{/each}
+										</div>
+									{:else}
+										<div style="color:var(--text-tertiary); font-style:italic;">Text input (free-form text, no pre-defined choices)</div>
+									{/if}
+								</div>
+							</div>
+						{/each}
+						
+						<button class="btn btn-primary" onclick={() => { showNewCfModal = true; }} style="align-self:flex-start; margin-top:8px;">+ Add Custom Field</button>
+					</div>
+				</section>
+
 			{:else if activeSection === 'notifications'}
 				<section class="settings-section">
 					<h2>Notification Preferences</h2>
@@ -257,6 +382,102 @@
 		</div>
 	</div>
 </div>
+
+{#if editingCf}
+	<div class="modal-overlay" onclick={e => e.target === e.currentTarget && (editingCf = null)} role="presentation">
+		<div class="modal modal-sm" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 440px; box-shadow: var(--shadow-lg);">
+			<div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--border);">
+				<h3 style="font-size: 16px; font-weight: 600; margin: 0;">Edit Field options</h3>
+				<button class="btn-icon" onclick={() => editingCf = null} style="font-size:20px; line-height:1; cursor:pointer;">×</button>
+			</div>
+			<div class="modal-body" style="padding:20px; display:flex; flex-direction:column; gap:16px;">
+				<div class="form-group" style="margin-bottom:0;">
+					<label for="cf-edit-label">Field Label</label>
+					<input id="cf-edit-label" type="text" bind:value={editingCf.field_label} style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);" />
+				</div>
+				<div class="form-group" style="margin-bottom:0;">
+					<label for="cf-edit-type">Field Type</label>
+					<select id="cf-edit-type" bind:value={editingCf.field_type} style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);">
+						<option value="text">Text Input</option>
+						<option value="select">Dropdown Choice</option>
+					</select>
+				</div>
+				
+				{#if editingCf.field_type === 'select'}
+					<div class="form-group" style="margin-bottom:0; display:flex; flex-direction:column; gap:6px;">
+						<label>Dropdown Options List</label>
+						<div style="display:flex; flex-wrap:wrap; gap:6px; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; min-height:48px;">
+							{#each editingCf.field_options || [] as opt, idx}
+								<span style="display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); padding:2px 8px; border-radius:12px; font-size:12px; color:var(--text);">
+									{opt}
+									<button type="button" onclick={() => { if (editingCf) editingCf.field_options = editingCf.field_options.filter((_, i) => i !== idx); }} style="border:none; background:none; cursor:pointer; font-weight:bold; font-size:12px; color:var(--red); padding:0 2px;">×</button>
+								</span>
+							{/each}
+						</div>
+						<div style="display:flex; gap:8px; margin-top:4px;">
+							<input type="text" placeholder="Add new option..." bind:value={newOptionText} onkeydown={e => e.key === 'Enter' && (e.preventDefault(), addOptionToEditingCf())} style="flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);" />
+							<button type="button" class="btn btn-primary btn-sm" onclick={addOptionToEditingCf}>Add</button>
+						</div>
+					</div>
+				{/if}
+			</div>
+			<div class="form-actions" style="display:flex; justify-content:flex-end; gap:8px; padding:12px 20px; border-top:1px solid var(--border);">
+				<button class="btn btn-ghost" onclick={() => editingCf = null}>Cancel</button>
+				<button class="btn btn-primary" onclick={saveEditingCf}>Save Changes</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showNewCfModal}
+	<div class="modal-overlay" onclick={e => e.target === e.currentTarget && (showNewCfModal = false)} role="presentation">
+		<div class="modal modal-sm" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 440px; box-shadow: var(--shadow-lg);">
+			<div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--border);">
+				<h3 style="font-size: 16px; font-weight: 600; margin: 0;">New Custom Field</h3>
+				<button class="btn-icon" onclick={() => showNewCfModal = false} style="font-size:20px; line-height:1; cursor:pointer;">×</button>
+			</div>
+			<div class="modal-body" style="padding:20px; display:flex; flex-direction:column; gap:16px;">
+				<div class="form-group" style="margin-bottom:0;">
+					<label for="cf-new-key">Field Key (lowercase, unique)</label>
+					<input id="cf-new-key" type="text" bind:value={newCfKey} placeholder="scent_preference" style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);" />
+				</div>
+				<div class="form-group" style="margin-bottom:0;">
+					<label for="cf-new-label">Field Label</label>
+					<input id="cf-new-label" type="text" bind:value={newCfLabel} placeholder="Scent Preference" style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);" />
+				</div>
+				<div class="form-group" style="margin-bottom:0;">
+					<label for="cf-new-type">Field Type</label>
+					<select id="cf-new-type" bind:value={newCfType} style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);">
+						<option value="text">Text Input</option>
+						<option value="select">Dropdown Choice</option>
+					</select>
+				</div>
+				
+				{#if newCfType === 'select'}
+					<div class="form-group" style="margin-bottom:0; display:flex; flex-direction:column; gap:6px;">
+						<label>Dropdown Options List</label>
+						<div style="display:flex; flex-wrap:wrap; gap:6px; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; min-height:48px;">
+							{#each newCfOptions as opt, idx}
+								<span style="display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); padding:2px 8px; border-radius:12px; font-size:12px; color:var(--text);">
+									{opt}
+									<button type="button" onclick={() => { newCfOptions = newCfOptions.filter((_, i) => i !== idx); }} style="border:none; background:none; cursor:pointer; font-weight:bold; font-size:12px; color:var(--red); padding:0 2px;">×</button>
+								</span>
+							{/each}
+						</div>
+						<div style="display:flex; gap:8px; margin-top:4px;">
+							<input type="text" placeholder="Add option..." bind:value={newOptionText} onkeydown={e => e.key === 'Enter' && (e.preventDefault(), addOptionToNewCf())} style="flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);" />
+							<button type="button" class="btn btn-primary btn-sm" onclick={addOptionToNewCf}>Add</button>
+						</div>
+					</div>
+				{/if}
+			</div>
+			<div class="form-actions" style="display:flex; justify-content:flex-end; gap:8px; padding:12px 20px; border-top:1px solid var(--border);">
+				<button class="btn btn-ghost" onclick={() => showNewCfModal = false}>Cancel</button>
+				<button class="btn btn-primary" onclick={saveNewCf}>Create Field</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.page { padding: 24px 32px; max-width: 1100px; margin: 0 auto; }
