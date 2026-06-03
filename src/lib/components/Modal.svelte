@@ -39,13 +39,18 @@
 		}
 	}
 
-	$: if (typeof window !== 'undefined') {
-		if (open) {
-			document.body.style.overflow = 'hidden';
-		} else {
-			document.body.style.overflow = '';
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			if (open) {
+				document.body.style.overflow = 'hidden';
+				return () => {
+					document.body.style.overflow = '';
+				};
+			} else {
+				document.body.style.overflow = '';
+			}
 		}
-	}
+	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />

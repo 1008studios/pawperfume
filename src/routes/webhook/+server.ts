@@ -140,7 +140,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					// Process with bot engine
 					if (conv.is_bot_enabled) {
 						try {
-							await processIncomingMessage(db, conv, messageText, senderId);
+							await processIncomingMessage(db, conv as any, messageText, senderId);
 						} catch (botError) {
 							console.error('Bot engine error:', botError);
 							// Don't fail the webhook - just log the error
@@ -151,7 +151,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				// Handle postbacks
 				if (ev.postback?.payload === 'GET_STARTED') {
 					try {
-						await processIncomingMessage(db, conv, 'GET_STARTED', senderId);
+						await processIncomingMessage(db, conv as any, 'GET_STARTED', senderId);
 					} catch (err) {
 						console.error('Postback handling error:', err);
 					}

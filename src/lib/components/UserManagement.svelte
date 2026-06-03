@@ -20,14 +20,7 @@
 
 	const dispatch = createEventDispatcher();
 
-	let showCreateForm = $state(false);
 	let editingUser = $state<User | null>(null);
-	let newUser = $state<Partial<User>>({
-		name: '',
-		email: '',
-		role: 'agent',
-		status: 'active'
-	});
 
 	const ROLE_COLORS = {
 		admin: '#ef4444',
@@ -37,17 +30,27 @@
 
 	function editUser(user: User) {
 		editingUser = { ...user };
-		showCreateForm = false;
+	}
+
+	function startAddUser() {
+		editingUser = {
+			id: '',
+			name: '',
+			email: '',
+			role: 'agent',
+			status: 'active',
+			createdAt: new Date().toISOString()
+		};
 	}
 
 	function saveUser() {
 		if (editingUser) {
-			dispatch('update', editingUser);
-		} else {
-			dispatch('create', newUser);
-			newUser = { name: '', email: '', role: 'agent', status: 'active' };
+			if (editingUser.id) {
+				dispatch('update', editingUser);
+			} else {
+				dispatch('create', editingUser);
+			}
 		}
-		showCreateForm = false;
 		editingUser = null;
 	}
 
@@ -77,7 +80,7 @@
 			<div class="modal-header">
 				<h2>User Management</h2>
 				<div class="header-actions">
-					<button class="btn btn-primary" onclick={() => { showCreateForm = true; editingUser = null; }}>
+					<button class="btn btn-primary" onclick={startAddUser}>
 						+ Add User
 					</button>
 					<button class="btn-icon" onclick={() => dispatch('close')}></button>
@@ -85,7 +88,7 @@
 			</div>
 
 			<div class="modal-body">
-				{#if !showCreateForm && !editingUser}
+				{#if !editingUser}
 					<div class="users-table">
 						<table>
 							<thead>
@@ -148,7 +151,7 @@
 							<label>Full Name *</label>
 							<input 
 								type="text" 
-								bind:value={(editingUser || newUser).name}
+								bind:value={editingUser.name}
 								placeholder="Juan Dela Cruz"
 								required
 							/>
@@ -158,7 +161,7 @@
 							<label>Email *</label>
 							<input 
 								type="email" 
-								bind:value={(editingUser || newUser).email}
+								bind:value={editingUser.email}
 								placeholder="juan@example.com"
 								required
 							/>
@@ -166,7 +169,7 @@
 
 						<div class="form-group">
 							<label>Role *</label>
-							<select bind:value={(editingUser || newUser).role} required>
+							<select bind:value={editingUser.role} required>
 								<option value="agent">Agent</option>
 								<option value="manager">Manager</option>
 								<option value="admin">Admin</option>
@@ -178,7 +181,7 @@
 
 						<div class="form-group">
 							<label>Status</label>
-							<select bind:value={(editingUser || newUser).status}>
+							<select bind:value={editingUser.status}>
 								<option value="active">Active</option>
 								<option value="inactive">Inactive</option>
 							</select>
@@ -188,12 +191,12 @@
 							<button 
 								type="button" 
 								class="btn btn-secondary" 
-								onclick={() => { showCreateForm = false; editingUser = null; }}
+								onclick={() => { editingUser = null; }}
 							>
 								Cancel
 							</button>
 							<button type="submit" class="btn btn-primary">
-								{editingUser ? 'Update User' : 'Create User'}
+								{editingUser.id ? 'Update User' : 'Create User'}
 							</button>
 						</div>
 					</form>

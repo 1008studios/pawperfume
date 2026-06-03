@@ -105,13 +105,13 @@ export async function exportToPDF({ filename, data, columns, headers }: ExportOp
 		const colWidth = (pageWidth - 28) / cols.length;
 
 		// Headers
-		doc.setFont(undefined, 'bold');
+		doc.setFont('helvetica', 'bold');
 		hdrs.forEach((header, i) => {
 			doc.text(header, 14 + (i * colWidth), 35);
 		});
 
 		// Data
-		doc.setFont(undefined, 'normal');
+		doc.setFont('helvetica', 'normal');
 		data.forEach((row, rowIndex) => {
 			const y = 42 + (rowIndex * 7);
 			

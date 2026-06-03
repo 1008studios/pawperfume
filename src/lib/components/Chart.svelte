@@ -84,6 +84,14 @@
 		});
 	});
 
+	const linePoints = $derived(
+		data.map((d, i) => {
+			const x = 35 + i * (barWidth() + 10) + barWidth() / 2;
+			const y = height - 40 - (d.value - minValue()) * scaleY();
+			return `${x},${y}`;
+		}).join(' ')
+	);
+
 	function formatValue(value: number): string {
 		if (value >= 1000000) {
 			return (value / 1000000).toFixed(1) + 'M';
@@ -174,14 +182,8 @@
 			{/each}
 
 			<!-- Line path -->
-			{@const points = data.map((d, i) => {
-				const x = 35 + i * (barWidth() + 10) + barWidth() / 2;
-				const y = height - 40 - (d.value - minValue()) * scaleY();
-				return `${x},${y}`;
-			}).join(' ')}
-			
 			<polyline
-				points={points}
+				points={linePoints}
 				fill="none"
 				stroke={getColor(0)}
 				stroke-width="3"

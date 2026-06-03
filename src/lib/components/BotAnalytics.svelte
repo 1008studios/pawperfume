@@ -104,6 +104,8 @@
 			<h3>Bot Flow Performance</h3>
 			<div class="flows-list">
 				{#each botPerformance as flow}
+					{@const total = flow.completions + flow.dropoffs}
+					{@const rate = total > 0 ? (flow.completions / total) * 100 : 0}
 					<div class="flow-item">
 						<div class="flow-header">
 							<span class="flow-name">{flow.flow}</span>
@@ -113,8 +115,6 @@
 							</div>
 						</div>
 						<div class="flow-bar">
-							{@const total = flow.completions + flow.dropoffs}
-							{@const rate = total > 0 ? (flow.completions / total) * 100 : 0}
 							<div class="flow-bar-fill" style="width: {rate}%"></div>
 						</div>
 						<div class="flow-rate">{rate.toFixed(1)}% completion</div>

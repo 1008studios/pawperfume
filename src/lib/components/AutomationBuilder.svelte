@@ -31,6 +31,23 @@
 	let connections = $state<AutomationConnection[]>(initialConnections);
 
 	let selectedNode = $state<AutomationNode | null>(null);
+	let configString = $state('');
+
+	$effect(() => {
+		if (selectedNode) {
+			configString = JSON.stringify(selectedNode.config, null, 2);
+		}
+	});
+
+	function handleConfigInput() {
+		try {
+			if (selectedNode) {
+				selectedNode.config = JSON.parse(configString);
+				nodes = [...nodes];
+			}
+		} catch {}
+	}
+
 	let draggingNode = $state<AutomationNode | null>(null);
 	let dragOffset = $state({ x: 0, y: 0 });
 
@@ -219,7 +236,8 @@
 					<div class="form-group">
 						<label>Configuration</label>
 						<textarea 
-							bind:value={JSON.stringify(selectedNode.config, null, 2)}
+							bind:value={configString}
+							oninput={handleConfigInput}
 							rows="10"
 						></textarea>
 					</div>

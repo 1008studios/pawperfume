@@ -35,8 +35,8 @@
 		}
 	});
 
-	onMount(async () => {
-		await Promise.all([loadConversations(), loadQuickReplies()]);
+	onMount(() => {
+		Promise.all([loadConversations(), loadQuickReplies()]);
 		startPolling();
 		return () => stopPolling();
 	});
@@ -80,7 +80,7 @@
 			const res = await api.messages(convId);
 			messages = res.messages as Message[];
 		} catch (err) {
-			showToast('Di makuha ang messages. Try lang ulit?', 'error');
+			showToast('Could not load messages. Please try again.', 'error');
 			console.error(err);
 		}
 	}
@@ -112,9 +112,9 @@
 			replyText = '';
 			await loadMessages(selectedConv.id);
 			await loadConversations();
-			showToast('Sent! Hintay lang ng reply.', 'success');
+			showToast('Message sent.', 'success');
 		} catch (err) {
-			showToast('Di ma-send ang message. Try ulit?', 'error');
+			showToast('Could not send message. Please try again.', 'error');
 			console.error(err);
 		} finally {
 			sendingMessage = false;

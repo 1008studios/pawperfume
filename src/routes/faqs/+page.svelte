@@ -20,7 +20,7 @@
 		try {
 			faqs = await api.faqs() as Faq[];
 		} catch (err) {
-			showToast('Di makuha ang FAQs. Try lang ulit?', 'error');
+			showToast('Could not load FAQs. Please try again.', 'error');
 		} finally {
 			loading = false;
 		}
@@ -29,12 +29,12 @@
 	async function addFaq() {
 		try {
 			await api.createFaq(newFaq);
-			showToast('FAQ added! Sasagot na ang bot dito.', 'success');
+			showToast('FAQ added.', 'success');
 			showForm = false;
 			newFaq = { question: '', answer: '', keywords: '' };
 			await loadFaqs();
 		} catch (err) {
-			showToast('Di ma-add ang FAQ. Check mo fields?', 'error');
+			showToast('Could not add FAQ. Check your fields and try again.', 'error');
 		}
 	}
 
@@ -47,10 +47,10 @@
 		if (!deletingId) return;
 		try {
 			await api.deleteFaq(deletingId);
-			showToast('FAQ deleted!', 'success');
+			showToast('FAQ deleted.', 'success');
 			await loadFaqs();
 		} catch (err) {
-			showToast('Di ma-delete. Try ulit?', 'error');
+			showToast('Could not delete. Please try again.', 'error');
 		} finally {
 			showDeleteConfirm = false;
 			deletingId = null;

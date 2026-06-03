@@ -83,9 +83,11 @@
 	}
 
 	// Auto-extract when modal opens
-	$: if (open && messageText) {
-		extractOrder();
-	}
+	$effect(() => {
+		if (open && messageText) {
+			extractOrder();
+		}
+	});
 </script>
 
 {#if open}

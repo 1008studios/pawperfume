@@ -1,7 +1,7 @@
 <div class="login-page">
 	<div class="login-card">
 		<div class="login-header">
-			<span class="login-icon"></span>
+			<span class="login-icon">🧴</span>
 			<h1>PawPerfume</h1>
 			<p>Tuloy ka, boss! 👋</p>
 		</div>
@@ -12,7 +12,7 @@
 					type="password"
 					id="password"
 					bind:value={password}
-					placeholder="Type your password dito"
+					placeholder="Enter your password"
 					autocomplete="current-password"
 					required
 				/>
@@ -52,10 +52,10 @@
 				showToast('Welcome back, boss! Ready na ba tayo? 🐾', 'success');
 				goto('/dashboard');
 			} else {
-				error = 'Mali yata ang password. Try mo ulit?';
+				error = 'Invalid password. Please try again.';
 			}
 		} catch (err) {
-			error = 'Di maka-connect. Check mo internet mo?';
+			error = 'Could not connect. Check your internet and try again.';
 			console.error(err);
 		} finally {
 			loading = false;

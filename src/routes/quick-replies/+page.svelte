@@ -20,7 +20,7 @@
 		try {
 			quickReplies = await api.quickReplies() as QuickReply[];
 		} catch (err) {
-			showToast('Di makuha ang quick replies. Try lang ulit?', 'error');
+			showToast('Could not load quick replies. Please try again.', 'error');
 		} finally {
 			loading = false;
 		}
@@ -29,12 +29,12 @@
 	async function addReply() {
 		try {
 			await api.createQuickReply(newReply);
-			showToast('Quick reply added! Ready na sa chats.', 'success');
+			showToast('Quick reply added.', 'success');
 			showForm = false;
 			newReply = { label: '', message: '' };
 			await loadQuickReplies();
 		} catch (err) {
-			showToast('Di ma-add ang reply. Check mo fields?', 'error');
+			showToast('Could not add reply. Check your fields and try again.', 'error');
 		}
 	}
 
@@ -47,10 +47,10 @@
 		if (!deletingId) return;
 		try {
 			await api.deleteQuickReply(deletingId);
-			showToast('Quick reply deleted!', 'success');
+			showToast('Quick reply deleted.', 'success');
 			await loadQuickReplies();
 		} catch (err) {
-			showToast('Di ma-delete. Try ulit?', 'error');
+			showToast('Could not delete. Please try again.', 'error');
 		} finally {
 			showDeleteConfirm = false;
 			deletingId = null;
@@ -59,7 +59,7 @@
 
 	function copyMessage(message: string) {
 		navigator.clipboard.writeText(message);
-		showToast('Naka-copy na! Paste mo na sa chat.', 'success');
+		showToast('Copied to clipboard.', 'success');
 	}
 </script>
 

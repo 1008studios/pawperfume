@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, fmtPeso, showToast, downloadCSV } from '$lib/api';
 	import type { Order, CustomField, OrderStatus, ColumnConfig } from '$lib/types';
@@ -33,7 +33,7 @@
 	const pageSize = 25;
 
 	const orderTemplates = [
-		{ name: 'Walk-in Sale', status: 'completed', payment: 'paid', amount: 0, notes: 'Walk-in customer' },
+		{ name: 'Walk-in Sale', status: 'delivered', payment: 'paid', amount: 0, notes: 'Walk-in customer' },
 		{ name: 'Online Order (COD)', status: 'new', payment: 'pending', amount: 0, notes: 'Cash on delivery' },
 		{ name: 'Online Order (GCash)', status: 'new', payment: 'paid', amount: 0, notes: 'Paid via GCash' },
 		{ name: 'Bulk Order', status: 'new', payment: 'pending', amount: 0, notes: 'Bulk purchase request' },
@@ -101,16 +101,17 @@
 			list = list.filter(o => o.created_at <= dateTo + 'T23:59:59');
 		}
 		if (sortField) {
+			const sf = sortField;
 			list = [...list].sort((a, b) => {
 				let va: unknown, vb: unknown;
-				if (sortField.startsWith('cf_')) {
-					const key = sortField.replace('cf_', '');
+				if (sf.startsWith('cf_')) {
+					const key = sf.replace('cf_', '');
 					const cfa = (typeof a.custom_fields === 'string' ? JSON.parse(a.custom_fields || '{}') : a.custom_fields || {}) as Record<string, unknown>;
 					const cfb = (typeof b.custom_fields === 'string' ? JSON.parse(b.custom_fields || '{}') : b.custom_fields || {}) as Record<string, unknown>;
 					va = cfa[key]; vb = cfb[key];
 				} else {
-					va = (a as Record<string, unknown>)[sortField];
-					vb = (b as Record<string, unknown>)[sortField];
+					va = (a as unknown as Record<string, unknown>)[sf];
+					vb = (b as unknown as Record<string, unknown>)[sf];
 				}
 				const cmp = String(va || '') > String(vb || '') ? 1 : -1;
 				return sortDir === 'asc' ? cmp : -cmp;
@@ -197,9 +198,9 @@
 		if (!deleteOrderId) return;
 		try {
 			await api.deleteOrder(deleteOrderId);
-			showToast('Deleted na. Hindi na mababawi yun ha.', 'success');
+			showToast('Order deleted.', 'success');
 			await loadOrders();
-		} catch (err) { showToast('Di ma-delete ang order. Try ulit?', 'error'); }
+		} catch (err) { showToast('Could not delete order. Please try again.', 'error'); }
 		finally { showDeleteConfirm = false; deleteOrderId = null; }
 	}
 
@@ -211,7 +212,7 @@
 			selectedIds = new Set();
 			showBulkActions = false;
 			await loadOrders();
-		} catch { showToast('Di ma-delete ang orders. Try ulit?', 'error'); }
+		} catch { showToast('Could not delete orders. Please try again.', 'error'); }
 	}
 
 	async function bulkStatusChange() {
@@ -223,7 +224,7 @@
 			showBulkActions = false;
 			bulkStatus = '';
 			await loadOrders();
-		} catch { showToast('Di ma-update ang orders. Try ulit?', 'error'); }
+		} catch { showToast('Could not update orders. Please try again.', 'error'); }
 	}
 
 	async function quickStatusChange(order: Order, newStatus: string) {
@@ -231,7 +232,7 @@
 			await api.updateOrder(order.id, { status: newStatus });
 			showToast(`Order #${order.id} → ${newStatus} na!`, 'success');
 			await loadOrders();
-		} catch { showToast('Di ma-update ang status. Try ulit?', 'error'); }
+		} catch { showToast('Could not update status. Please try again.', 'error'); }
 	}
 
 	async function saveOrder() {
@@ -252,7 +253,7 @@
 			showToast(editingOrder.id ? `Ayos! Updated na si Order #${editingOrder.id}.` : 'Ayos! Bagong order, nasa list na! 📋', 'success');
 			editingOrder = null;
 			await loadOrders();
-		} catch (err) { showToast('Di ma-save ang order. Check mo fields mo?', 'error'); }
+		} catch (err) { showToast('Could not save order. Check your fields and try again.', 'error'); }
 	}
 
 	function newOrder(template?: typeof orderTemplates[0]) {
@@ -277,7 +278,7 @@
 		const headers = visibleColumns.map(c => c.column_label);
 		const rows = filteredOrders.map(o => visibleColumns.map(c => getCellValue(o, c)));
 		downloadCSV(headers, rows, 'pawperfume-orders.csv');
-		showToast('CSV ready na! Pwede mo nang i-download.', 'success');
+		showToast('CSV exported.', 'success');
 	}
 
 	function clearFilters() {
@@ -324,7 +325,7 @@
 					<button class="template-card" onclick={() => newOrder(tpl)}>
 						<div class="template-name">{tpl.name}</div>
 						<div class="template-meta">
-							<span class="badge badge-{tpl.status === 'completed' ? 'completed' : 'new'}">{tpl.status}</span>
+							<span class="badge badge-{tpl.status === 'delivered' ? 'delivered' : 'new'}">{tpl.status}</span>
 							<span class="template-payment">{tpl.payment}</span>
 						</div>
 					</button>
@@ -671,7 +672,7 @@
 	.badge-paid { background: var(--green-bg); color: var(--green); }
 	.badge-pending { background: var(--orange-bg); color: var(--orange); }
 	.badge-new { background: var(--accent-bg); color: var(--accent); }
-	.badge-completed { background: var(--green-bg); color: var(--green); }
+	.badge-completed, .badge-delivered { background: var(--green-bg); color: var(--green); }
 
 	.actions-col { width: 70px; text-align: right; }
 	.row-actions { display: flex; gap: 2px; justify-content: flex-end; opacity: 0; transition: opacity 0.15s; }

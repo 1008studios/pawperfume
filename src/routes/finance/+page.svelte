@@ -32,7 +32,7 @@ import type { LedgerEntry } from '$lib/types';
 	async function loadEntries() {
 		loading = true;
 		try { entries = await api.finance() as LedgerEntry[]; }
-		catch { showToast('Di makuha ang finance data. Try lang ulit?', 'error'); }
+		catch { showToast('Could not load finance data. Please try again.', 'error'); }
 		finally { loading = false; }
 	}
 
@@ -88,19 +88,19 @@ import type { LedgerEntry } from '$lib/types';
 	async function addEntry() {
 		try {
 			await api.createFinance(newEntry);
-			showToast('Added na! Updated na ang finances mo.', 'success');
+			showToast('Entry added.', 'success');
 			showForm = false;
 			newEntry = { date: new Date().toISOString().split('T')[0], type: 'expense', amount: 0, description: '', category: '' };
 			await loadEntries();
-		} catch { showToast('Di ma-add ang entry. Check mo fields?', 'error'); }
+		} catch { showToast('Could not add entry. Check your fields and try again.', 'error'); }
 	}
 
 	function promptDelete(id: number) { deletingId = id; showDeleteConfirm = true; }
 
 	async function confirmDelete() {
 		if (!deletingId) return;
-		try { await api.deleteFinance(deletingId); showToast('Deleted na!', 'success'); await loadEntries(); }
-		catch { showToast('Di ma-delete. Try ulit?', 'error'); }
+		try { await api.deleteFinance(deletingId); showToast('Entry deleted.', 'success'); await loadEntries(); }
+		catch { showToast('Could not delete. Please try again.', 'error'); }
 		finally { showDeleteConfirm = false; deletingId = null; }
 	}
 
@@ -108,7 +108,7 @@ import type { LedgerEntry } from '$lib/types';
 		const headers = ['Date', 'Description', 'Category', 'Type', 'Amount'];
 		const rows = filteredEntries.map(e => [e.date, e.description || '', e.category || '', e.type, String(e.amount)]);
 		downloadCSV(headers, rows, 'pawperfume-finance.csv');
-		showToast('CSV ready na! Pwede mo nang i-download.', 'success');
+		showToast('CSV exported.', 'success');
 	}
 
 	function clearFilters() { searchQuery = ''; typeFilter = 'all'; categoryFilter = 'all'; dateFrom = ''; dateTo = ''; }

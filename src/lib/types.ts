@@ -14,6 +14,8 @@ export interface Tenant {
 	ai_enabled: boolean;
 	plan: string;
 	fb_page_access_token: string | null;
+	fb_app_secret: string | null;
+	fb_verify_token: string | null;
 	fb_page_id: string | null;
 	is_active: boolean;
 	created_at: string;

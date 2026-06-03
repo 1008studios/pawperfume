@@ -20,7 +20,7 @@
 		try {
 			automations = await api.automations() as Automation[];
 		} catch (err) {
-			showToast('Di makuha ang automations. Try lang ulit?', 'error');
+			showToast('Could not load automations. Please try again.', 'error');
 		} finally {
 			loading = false;
 		}
@@ -29,12 +29,12 @@
 	async function addAutomation() {
 		try {
 			await api.createAutomation(newAutomation);
-			showToast('Automation added! Active na yan.', 'success');
+			showToast('Automation added.', 'success');
 			showForm = false;
 			newAutomation = { name: '', trigger_type: 'keyword', trigger_value: '' };
 			await loadAutomations();
 		} catch (err) {
-			showToast('Di ma-add ang automation. Check mo fields?', 'error');
+			showToast('Could not add automation. Check your fields and try again.', 'error');
 		}
 	}
 
@@ -47,10 +47,10 @@
 		if (!deletingId) return;
 		try {
 			await api.deleteAutomation(deletingId);
-			showToast('Automation deleted!', 'success');
+			showToast('Automation deleted.', 'success');
 			await loadAutomations();
 		} catch (err) {
-			showToast('Di ma-delete. Try ulit?', 'error');
+			showToast('Could not delete. Please try again.', 'error');
 		} finally {
 			showDeleteConfirm = false;
 			deletingId = null;

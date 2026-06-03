@@ -20,7 +20,7 @@
 		try {
 			tags = await api.tags() as Tag[];
 		} catch (err) {
-			showToast('Di makuha ang tags. Try lang ulit?', 'error');
+			showToast('Could not load tags. Please try again.', 'error');
 		} finally {
 			loading = false;
 		}
@@ -29,12 +29,12 @@
 	async function addTag() {
 		try {
 			await api.createTag(newTag);
-			showToast('Tag added! Pwede mo na gamitin.', 'success');
+			showToast('Tag added.', 'success');
 			showForm = false;
 			newTag = { tagKey: '', tagLabel: '', color: '#8b5cf6' };
 			await loadTags();
 		} catch (err) {
-			showToast('Di ma-add ang tag. Check mo fields?', 'error');
+			showToast('Could not add tag. Check your fields and try again.', 'error');
 		}
 	}
 
@@ -47,10 +47,10 @@
 		if (!deletingId) return;
 		try {
 			await api.deleteTag(deletingId);
-			showToast('Tag deleted!', 'success');
+			showToast('Tag deleted.', 'success');
 			await loadTags();
 		} catch (err) {
-			showToast('Di ma-delete. Try ulit?', 'error');
+			showToast('Could not delete. Please try again.', 'error');
 		} finally {
 			showDeleteConfirm = false;
 			deletingId = null;

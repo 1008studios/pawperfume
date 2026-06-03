@@ -20,7 +20,7 @@
 		try {
 			media = await api.media() as MediaAsset[];
 		} catch (err) {
-			showToast('Di makuha ang media files. Try lang ulit?', 'error');
+			showToast('Could not load media files. Please try again.', 'error');
 		} finally {
 			loading = false;
 		}
@@ -29,12 +29,12 @@
 	async function addMedia() {
 		try {
 			await api.createMedia(newMedia);
-			showToast('Media added! Ready na gamitin.', 'success');
+			showToast('Media added.', 'success');
 			showForm = false;
 			newMedia = { url: '', filename: '', category: 'general' };
 			await loadMedia();
 		} catch (err) {
-			showToast('Di ma-add ang media. Check mo URL?', 'error');
+			showToast('Could not add media. Check your URL and try again.', 'error');
 		}
 	}
 
@@ -47,10 +47,10 @@
 		if (!deletingId) return;
 		try {
 			await api.deleteMedia(deletingId);
-			showToast('Media deleted!', 'success');
+			showToast('Media deleted.', 'success');
 			await loadMedia();
 		} catch (err) {
-			showToast('Di ma-delete. Try ulit?', 'error');
+			showToast('Could not delete. Please try again.', 'error');
 		} finally {
 			showDeleteConfirm = false;
 			deletingId = null;
@@ -84,7 +84,7 @@
 			{#each media as item}
 				<div class="media-card">
 					{#if item.url}
-						<img src={item.url} alt={item.filename || 'Media'} onerror={e => e.currentTarget.style.display = 'none'} />
+						<img src={item.url} alt={item.filename || 'Media'} onerror={e => (e.currentTarget as HTMLImageElement).style.display = 'none'} />
 					{:else}
 						<div class="media-placeholder">No preview</div>
 					{/if}

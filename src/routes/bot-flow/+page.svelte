@@ -31,7 +31,7 @@
 	async function loadSteps() {
 		loading = true;
 		try { steps = await api.botFlow() as BotFlowStep[]; }
-		catch { showToast('Di makuha ang bot flow. Try lang ulit?', 'error'); }
+		catch { showToast('Could not load bot flow. Please try again.', 'error'); }
 		finally { loading = false; }
 	}
 
@@ -63,16 +63,16 @@
 					input_variable: newStep.inputVariable,
 					button_choices: newStep.buttonChoices,
 				});
-				showToast('Step updated!', 'success');
+				showToast('Step updated.', 'success');
 			} else {
 				await api.createBotFlowStep(newStep);
-				showToast('Step added! Nasa flow na yan.', 'success');
+				showToast('Step added.', 'success');
 			}
 			showForm = false;
 			editingStep = null;
 			resetForm();
 			await loadSteps();
-		} catch { showToast('Di ma-save ang step. Try ulit?', 'error'); }
+		} catch { showToast('Could not save step. Please try again.', 'error'); }
 	}
 
 	function editStep(step: BotFlowStep) {
@@ -110,9 +110,9 @@
 		if (!deletingId) return;
 		try {
 			await api.generic(`/bot-flow/${deletingId}`, 'DELETE');
-			showToast('Step deleted!', 'success');
+			showToast('Step deleted.', 'success');
 			await loadSteps();
-		} catch { showToast('Di ma-delete. Try ulit?', 'error'); }
+		} catch { showToast('Could not delete. Please try again.', 'error'); }
 		finally { showDeleteConfirm = false; deletingId = null; }
 	}
 
@@ -128,7 +128,7 @@
 			await api.generic(`/bot-flow/${step.id}`, 'PUT', { sort_order: step.sort_order });
 			await api.generic(`/bot-flow/${other.id}`, 'PUT', { sort_order: other.sort_order });
 			await loadSteps();
-		} catch { showToast('Di ma-reorder. Try ulit?', 'error'); }
+		} catch { showToast('Could not reorder. Please try again.', 'error'); }
 	}
 
 	function startTest() {
@@ -196,7 +196,7 @@
 		a.href = URL.createObjectURL(blob);
 		a.download = 'bot-flow.json';
 		a.click();
-		showToast('Bot flow na-export na! JSON file ready.', 'success');
+		showToast('Flow exported.', 'success');
 	}
 
 	function addButtonChoice() {

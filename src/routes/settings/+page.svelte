@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, showToast } from '$lib/api';
+	import type { Tenant } from '$lib/types';
 
-	let tenant = $state<Record<string, unknown>>({});
+	let tenant = $state<Partial<Tenant>>({});
 	let loading = $state(true);
 	let saving = $state(false);
 	let activeSection = $state('brand');
@@ -23,7 +24,7 @@
 	async function loadSettings() {
 		loading = true;
 		try { tenant = await api.tenantConfig(); }
-		catch { showToast('Di makuha ang settings. Try lang ulit?', 'error'); }
+		catch { showToast('Could not load settings. Please try again.', 'error'); }
 		finally { loading = false; }
 	}
 
@@ -41,8 +42,8 @@
 				ai_tone: tenant.ai_tone,
 				ai_enabled: tenant.ai_enabled,
 			});
-			showToast('Ayos na! Na-save na ang settings mo.', 'success');
-		} catch { showToast('Di ma-save ang settings. Try ulit?', 'error'); }
+			showToast('Settings saved.', 'success');
+		} catch { showToast('Could not save settings. Please try again.', 'error'); }
 		finally { saving = false; }
 	}
 

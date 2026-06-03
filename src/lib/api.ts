@@ -44,42 +44,51 @@ export const api = {
 	messages: (convId: number) => request<{ messages: unknown[] }>(`/messages/${convId}`),
 	sendMessage: (senderId: string, text: string) => request<{ ok: boolean }>('/send-message', 'POST', { senderId, text }),
 
-	orders: () => request<{ orders: unknown[]; custom_fields: unknown[]; order_statuses: unknown[] }>('/orders'),
+	orders: () => request<{ orders: unknown[]; custom_fields: unknown[]; order_statuses: unknown[]; column_configs: unknown[] }>('/orders'),
 	createOrder: (data: unknown) => request<{ ok: boolean }>('/orders', 'POST', data),
 	updateOrder: (id: number, data: unknown) => request<{ ok: boolean }>(`/orders/${id}`, 'PUT', data),
 	deleteOrder: (id: number) => request<{ ok: boolean }>(`/orders/${id}`, 'DELETE'),
 
 	finance: () => request<unknown[]>('/finance'),
 	createFinance: (data: unknown) => request<{ ok: boolean }>('/finance', 'POST', data),
+	updateFinance: (id: number, data: unknown) => request<{ ok: boolean }>(`/finance/${id}`, 'PUT', data),
 	deleteFinance: (id: number) => request<{ ok: boolean }>(`/finance/${id}`, 'DELETE'),
 
 	faqs: () => request<unknown[]>('/faqs'),
 	createFaq: (data: unknown) => request<{ ok: boolean }>('/faqs', 'POST', data),
+	updateFaq: (id: number, data: unknown) => request<{ ok: boolean }>(`/faqs/${id}`, 'PUT', data),
 	deleteFaq: (id: number) => request<{ ok: boolean }>(`/faqs/${id}`, 'DELETE'),
 
 	quickReplies: () => request<unknown[]>('/quick-replies'),
 	createQuickReply: (data: unknown) => request<{ ok: boolean }>('/quick-replies', 'POST', data),
+	updateQuickReply: (id: number, data: unknown) => request<{ ok: boolean }>(`/quick-replies/${id}`, 'PUT', data),
 	deleteQuickReply: (id: number) => request<{ ok: boolean }>(`/quick-replies/${id}`, 'DELETE'),
 
 	botFlow: () => request<unknown[]>('/bot-flow'),
 	createBotFlowStep: (data: unknown) => request<{ ok: boolean }>('/bot-flow', 'POST', data),
+	updateBotFlowStep: (id: number, data: unknown) => request<{ ok: boolean }>(`/bot-flow/${id}`, 'PUT', data),
 	deleteBotFlowStep: (id: number) => request<{ ok: boolean }>(`/bot-flow/${id}`, 'DELETE'),
+
+	// botFlowReorder: handled via updateBotFlowStep with sort_order
 
 	automations: () => request<unknown[]>('/automations'),
 	createAutomation: (data: unknown) => request<{ ok: boolean }>('/automations', 'POST', data),
+	updateAutomation: (id: number, data: unknown) => request<{ ok: boolean }>(`/automations/${id}`, 'PUT', data),
 	deleteAutomation: (id: number) => request<{ ok: boolean }>(`/automations/${id}`, 'DELETE'),
 
 	tags: () => request<unknown[]>('/tags'),
 	createTag: (data: unknown) => request<{ ok: boolean }>('/tags', 'POST', data),
+	updateTag: (id: number, data: unknown) => request<{ ok: boolean }>(`/tags/${id}`, 'PUT', data),
 	deleteTag: (id: number) => request<{ ok: boolean }>(`/tags/${id}`, 'DELETE'),
+
+	media: () => request<unknown[]>('/media'),
+	createMedia: (data: unknown) => request<{ ok: boolean }>('/media', 'POST', data),
+	updateMedia: (id: number, data: unknown) => request<{ ok: boolean }>(`/media/${id}`, 'PUT', data),
+	deleteMedia: (id: number) => request<{ ok: boolean }>(`/media/${id}`, 'DELETE'),
 
 	customFields: () => request<unknown[]>('/custom-fields'),
 	createCustomField: (data: unknown) => request<{ ok: boolean }>('/custom-fields', 'POST', data),
 	deleteCustomField: (id: number) => request<{ ok: boolean }>(`/custom-fields/${id}`, 'DELETE'),
-
-	media: () => request<unknown[]>('/media'),
-	createMedia: (data: unknown) => request<{ ok: boolean }>('/media', 'POST', data),
-	deleteMedia: (id: number) => request<{ ok: boolean }>(`/media/${id}`, 'DELETE'),
 
 	updateTenant: (data: unknown) => request<{ ok: boolean }>('/tenants', 'PUT', data),
 

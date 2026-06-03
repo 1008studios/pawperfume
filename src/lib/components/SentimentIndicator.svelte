@@ -15,9 +15,9 @@
 
 	// Simple sentiment analysis based on keyword matching
 	// In production, this would call an AI API
-	let sentiment = $derived<SentimentResult>(() => {
+	let sentiment = $derived.by<SentimentResult>(() => {
 		if (!text || text.trim().length === 0) {
-			return { score: 0, label: 'neutral', emoji: '', color: '#6b7280' };
+			return { score: 0, label: 'neutral', emoji: '😐', color: '#6b7280' };
 		}
 
 		const positiveWords = [
@@ -48,32 +48,32 @@
 
 		const total = positiveCount + negativeCount;
 		if (total === 0) {
-			return { score: 0, label: 'neutral', emoji: '', color: '#6b7280' };
+			return { score: 0, label: 'neutral', emoji: '😐', color: '#6b7280' };
 		}
 
 		const score = (positiveCount - negativeCount) / total;
 
 		if (score > 0.2) {
-			return { score, label: 'positive', emoji: '', color: '#10b981' };
+			return { score, label: 'positive', emoji: '😊', color: '#10b981' };
 		} else if (score < -0.2) {
-			return { score, label: 'negative', emoji: '', color: '#ef4444' };
+			return { score, label: 'negative', emoji: '😢', color: '#ef4444' };
 		} else {
-			return { score: 0, label: 'neutral', emoji: '', color: '#6b7280' };
+			return { score: 0, label: 'neutral', emoji: '😐', color: '#6b7280' };
 		}
 	});
 </script>
 
-<div class="sentiment-indicator" style="--sentiment-color: {sentiment().color}">
+<div class="sentiment-indicator" style="--sentiment-color: {sentiment.color}">
 	<div class="sentiment-badge">
-		<span class="sentiment-emoji">{sentiment().emoji}</span>
+		<span class="sentiment-emoji">{sentiment.emoji}</span>
 		{#if showDetails}
-			<span class="sentiment-label">{sentiment().label}</span>
+			<span class="sentiment-label">{sentiment.label}</span>
 		{/if}
 	</div>
 
 	{#if showDetails}
 		<div class="sentiment-bar">
-			<div class="sentiment-fill" style="width: {Math.abs(sentiment().score) * 100}%"></div>
+			<div class="sentiment-fill" style="width: {Math.abs(sentiment.score) * 100}%"></div>
 		</div>
 	{/if}
 </div>

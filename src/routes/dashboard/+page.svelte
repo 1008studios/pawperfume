@@ -21,6 +21,7 @@
 		cancelledOrders: 0,
 		paidOrders: 0,
 		avgOrderValue: 0,
+		revenueChange: 0,
 	});
 
 	let recentConversations = $state<Conversation[]>([]);
@@ -65,9 +66,11 @@
 
 			const newOrders = rangeOrders.filter(o => o.status === 'new').length;
 			const confirmedOrders = rangeOrders.filter(o => o.status === 'confirmed').length;
-			const completedOrders = rangeOrders.filter(o => o.status === 'completed').length;
+			const completedOrders = rangeOrders.filter(o => o.status === 'delivered').length;
 			const cancelledOrders = rangeOrders.filter(o => o.status === 'cancelled').length;
 			const paidOrders = rangeOrders.filter(o => o.payment_status === 'paid').length;
+
+			const revenueChange = prevRevenue > 0 ? Math.round(((currentRevenue - prevRevenue) / prevRevenue) * 100) : (currentRevenue > 0 ? 100 : 0);
 
 			stats = {
 				activeChats: conversations.filter(c => new Date(c.last_activity_at || c.updated_at).getTime() > now - 86400000).length,
@@ -82,6 +85,7 @@
 				cancelledOrders,
 				paidOrders,
 				avgOrderValue: rangeOrders.length > 0 ? currentRevenue / rangeOrders.length : 0,
+				revenueChange,
 			};
 
 			// Revenue by day
@@ -135,7 +139,7 @@
 			recentConversations = conversations.slice(0, 6);
 			lastRefresh = new Date();
 		} catch (err) {
-			showToast('Ay, hindi makuha ang dashboard. Try lang ulit?', 'error');
+			showToast('Could not load dashboard. Please try again.', 'error');
 			console.error(err);
 		} finally { loading = false; }
 	}
@@ -172,7 +176,7 @@
 		<div class="charts-grid" style="margin-top:20px"><Skeleton height="280px" /><Skeleton height="280px" /></div>
 	{:else}
 		<div class="stats-grid">
-			<MetricCard label="Revenue" value={fmtPeso(stats.revenue)} icon="" color="var(--green)" trend={prevRevenue => stats.revenue > prevRevenue ? '+' : ''} />
+			<MetricCard label="Revenue" value={fmtPeso(stats.revenue)} icon="" color="var(--green)" change={stats.revenueChange} />
 			<MetricCard label="Orders" value={fmtNum(stats.totalOrders)} icon="" color="var(--accent)" />
 			<MetricCard label="Active Chats" value={stats.activeChats} icon="" color="var(--primary)" />
 			<MetricCard label="Avg Order" value={fmtPeso(stats.avgOrderValue)} icon="" color="var(--info)" />

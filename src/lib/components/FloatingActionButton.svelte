@@ -17,19 +17,19 @@
 		expanded = !expanded;
 	}
 
-	function getPositionStyles() {
-		const styles: Record<string, string> = {};
+	function getPositionStyles(): string {
+		let styles = '';
 		
 		if (position.includes('bottom')) {
-			styles.bottom = '24px';
+			styles += 'bottom: 24px;';
 		} else {
-			styles.top = '24px';
+			styles += 'top: 24px;';
 		}
 		
 		if (position.includes('right')) {
-			styles.right = '24px';
+			styles += 'right: 24px;';
 		} else {
-			styles.left = '24px';
+			styles += 'left: 24px;';
 		}
 		
 		return styles;

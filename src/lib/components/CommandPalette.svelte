@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { clearToken } from '$lib/api';
 
 	interface Command {
 		id: string;
@@ -12,14 +14,18 @@
 
 	interface Props {
 		open: boolean;
-		commands: Command[];
+		commands?: Command[];
 		placeholder?: string;
+		onClose?: () => void;
+		onToggleTheme?: () => void;
 	}
 
 	let { 
 		open, 
 		commands, 
-		placeholder = 'Type a command or search...' 
+		placeholder = 'Type a command or search...',
+		onClose,
+		onToggleTheme
 	}: Props = $props();
 
 	const dispatch = createEventDispatcher();
@@ -27,11 +33,31 @@
 	let searchQuery = $state('');
 	let selectedIndex = $state(0);
 
+	const activeCommands = $derived(() => {
+		if (commands) return commands;
+		return [
+			{ id: 'dash', label: 'Go to Dashboard', icon: '🏠', category: 'Navigation', handler: () => goto('/dashboard') },
+			{ id: 'chats', label: 'Go to Chats', icon: '💬', category: 'Navigation', handler: () => goto('/chats') },
+			{ id: 'orders', label: 'Go to Orders', icon: '📦', category: 'Navigation', handler: () => goto('/orders') },
+			{ id: 'finance', label: 'Go to Finance', icon: '💰', category: 'Navigation', handler: () => goto('/finance') },
+			{ id: 'faqs', label: 'Go to FAQs', icon: '❓', category: 'Navigation', handler: () => goto('/faqs') },
+			{ id: 'quick', label: 'Go to Quick Replies', icon: '⚡', category: 'Navigation', handler: () => goto('/quick-replies') },
+			{ id: 'bot', label: 'Go to Bot Flow', icon: '🤖', category: 'Navigation', handler: () => goto('/bot-flow') },
+			{ id: 'auto', label: 'Go to Automations', icon: '⚙️', category: 'Navigation', handler: () => goto('/automations') },
+			{ id: 'tags', label: 'Go to Tags', icon: '🏷️', category: 'Navigation', handler: () => goto('/tags') },
+			{ id: 'media', label: 'Go to Media', icon: '🖼️', category: 'Navigation', handler: () => goto('/media') },
+			{ id: 'settings', label: 'Go to Settings', icon: '🛠️', category: 'Navigation', handler: () => goto('/settings') },
+			{ id: 'theme', label: 'Toggle Light/Dark Theme', icon: '🌓', category: 'System', handler: () => { if (onToggleTheme) onToggleTheme(); } },
+			{ id: 'logout', label: 'Log Out', icon: '🚪', category: 'System', handler: () => { clearToken(); goto('/login'); } }
+		];
+	});
+
 	const filteredCommands = $derived(() => {
-		if (!searchQuery) return commands;
+		const cmdList = activeCommands();
+		if (!searchQuery) return cmdList;
 		
 		const query = searchQuery.toLowerCase();
-		return commands.filter(cmd => 
+		return cmdList.filter(cmd => 
 			cmd.label.toLowerCase().includes(query) ||
 			cmd.category?.toLowerCase().includes(query)
 		);
@@ -70,7 +96,11 @@
 	function close() {
 		searchQuery = '';
 		selectedIndex = 0;
-		dispatch('close');
+		if (onClose) {
+			onClose();
+		} else {
+			dispatch('close');
+		}
 	}
 
 	// Reset selection when search changes

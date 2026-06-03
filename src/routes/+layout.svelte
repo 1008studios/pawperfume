@@ -10,17 +10,17 @@
 	let { children } = $props();
 
 	const navItems = [
-		{ path: '/dashboard', label: 'Dashboard', section: 'Main', badge: false, svg: '<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/>' },
-		{ path: '/chats', label: 'Chats', section: 'Main', badge: true, svg: '<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>' },
-		{ path: '/orders', label: 'Orders', section: 'Main', badge: true, svg: '<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>' },
-		{ path: '/finance', label: 'Finance', section: 'Main', badge: false, svg: '<path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' },
-		{ path: '/faqs', label: 'FAQs', section: 'Content', badge: false, svg: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>' },
-		{ path: '/quick-replies', label: 'Quick Replies', section: 'Content', badge: false, svg: '<path d="M13 10V3L4 14h7v7l9-11h-7z"/>' },
-		{ path: '/bot-flow', label: 'Bot Flow', section: 'Content', badge: false, svg: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="10" r="1"/><circle cx="16" cy="10" r="1"/>' },
-		{ path: '/automations', label: 'Automations', section: 'Content', badge: false, svg: '<path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>' },
-		{ path: '/tags', label: 'Tags', section: 'Content', badge: false, svg: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1"/>' },
-		{ path: '/media', label: 'Media', section: 'Content', badge: false, svg: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>' },
-		{ path: '/settings', label: 'Settings', section: 'System', badge: false, svg: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>' }
+		{ path: '/dashboard', label: 'Dashboard', section: 'Main', badge: false, emoji: '🏠' },
+		{ path: '/chats', label: 'Chats', section: 'Main', badge: true, emoji: '💬' },
+		{ path: '/orders', label: 'Orders', section: 'Main', badge: true, emoji: '📦' },
+		{ path: '/finance', label: 'Finance', section: 'Main', badge: false, emoji: '💰' },
+		{ path: '/faqs', label: 'FAQs', section: 'Content', badge: false, emoji: '❓' },
+		{ path: '/quick-replies', label: 'Quick Replies', section: 'Content', badge: false, emoji: '⚡' },
+		{ path: '/bot-flow', label: 'Bot Flow', section: 'Content', badge: false, emoji: '🤖' },
+		{ path: '/automations', label: 'Automations', section: 'Content', badge: false, emoji: '⚙️' },
+		{ path: '/tags', label: 'Tags', section: 'Content', badge: false, emoji: '🏷️' },
+		{ path: '/media', label: 'Media', section: 'Content', badge: false, emoji: '🖼️' },
+		{ path: '/settings', label: 'Settings', section: 'System', badge: false, emoji: '🛠️' }
 	];
 
 	const sections = ['Main', 'Content', 'System'];
@@ -99,7 +99,7 @@
 		<button class="mobile-menu-btn" onclick={toggleMobileSidebar} aria-label="Open menu">
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
 		</button>
-
+ 
 		{#if mobileSidebarOpen}
 			<div class="mobile-backdrop" onclick={closeMobileSidebar} onkeydown={(e) => e.key === 'Escape' && closeMobileSidebar()} role="button" tabindex="-1" aria-label="Close sidebar"></div>
 		{/if}
@@ -108,15 +108,11 @@
 			<div class="sidebar-header">
 				{#if !$sidebarCollapsed}
 					<div class="brand">
-						<div class="brand-logo">
-							<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0114 0v2"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-						</div>
+						<span class="brand-logo" style="font-size: 18px;">🧴</span>
 						<span class="brand-text">PawPerfume</span>
 					</div>
 				{:else}
-					<div class="brand-logo-only">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0114 0v2"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-					</div>
+					<div class="brand-logo-only" style="font-size: 16px;">🧴</div>
 				{/if}
 				<button class="collapse-btn" onclick={toggleSidebar} title="Toggle sidebar">
 					{#if $sidebarCollapsed}
@@ -134,9 +130,7 @@
 					{/if}
 					{#each navItems.filter(i => i.section === section) as item}
 						<a href={item.path} class="nav-item" class:active={isActive(item.path)} title={item.label} onclick={handleNavClick}>
-							<span class="nav-icon">
-								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{@html item.svg}</svg>
-							</span>
+							<span class="nav-icon" style="font-size: 16px;">{item.emoji}</span>
 							{#if !$sidebarCollapsed}
 								<span class="nav-label">{item.label}</span>
 								{#if item.badge && item.path === '/chats' && unreadChats > 0}
@@ -153,17 +147,13 @@
 
 			<div class="sidebar-footer">
 				<button class="nav-item" onclick={toggleTheme} title="Toggle theme">
-					<span class="nav-icon">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-					</span>
+					<span class="nav-icon" style="font-size: 16px;">{$theme === 'dark' ? '☀️' : '🌙'}</span>
 					{#if !$sidebarCollapsed}
 						<span class="nav-label">{$theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
 					{/if}
 				</button>
 				<button class="nav-item" onclick={logout} title="Logout">
-					<span class="nav-icon">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><path d="M21 12H9"/></svg>
-					</span>
+					<span class="nav-icon" style="font-size: 16px;">🚪</span>
 					{#if !$sidebarCollapsed}
 						<span class="nav-label">Logout</span>
 					{/if}
