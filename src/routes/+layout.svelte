@@ -129,7 +129,7 @@
 						<div class="nav-section">{section}</div>
 					{/if}
 					{#each navItems.filter(i => i.section === section) as item}
-						<a href={item.path} class="nav-item" class:active={isActive(item.path)} title={item.label} onclick={handleNavClick}>
+						<a href={item.path} class="nav-item" class:active={isActive(item.path)} title={$sidebarCollapsed ? item.label : ''} onclick={handleNavClick}>
 							<span class="nav-icon">
 								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{@html item.svg}</svg>
 							</span>
@@ -148,7 +148,7 @@
 			</nav>
 
 			<div class="sidebar-footer">
-				<button class="nav-item" onclick={toggleTheme} title="Toggle theme">
+				<button class="nav-item" onclick={toggleTheme} title={$sidebarCollapsed ? ($theme === 'dark' ? 'Light Mode' : 'Dark Mode') : ''}>
 					<span class="nav-icon">
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 							{#if $theme === 'dark'}
@@ -162,7 +162,7 @@
 						<span class="nav-label">{$theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
 					{/if}
 				</button>
-				<button class="nav-item" onclick={logout} title="Logout">
+				<button class="nav-item" onclick={logout} title={$sidebarCollapsed ? 'Logout' : ''}>
 					<span class="nav-icon">
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><path d="M21 12H9"/></svg>
 					</span>

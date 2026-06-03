@@ -91,6 +91,13 @@
 		showForm = true;
 	}
 
+	function handleCardKeyDown(e: KeyboardEvent, step: BotFlowStep) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			editStep(step);
+		}
+	}
+
 	function resetForm() {
 		newStep = { stepKey: '', stepLabel: '', stepType: 'text_input', promptMessage: '', nextStep: '', inputVariable: '', buttonChoices: [], sortOrder: sortedSteps.length };
 	}
@@ -324,17 +331,31 @@
 			<div class="flow-connector-line"></div>
 
 			{#each sortedSteps as step, i}
-				<div class="flow-step" class:step-auto={step.step_type === 'auto'} class:step-button={step.step_type === 'button_choice'}>
+				<div 
+					class="flow-step clickable-card" 
+					class:step-auto={step.step_type === 'auto'} 
+					class:step-button={step.step_type === 'button_choice'}
+					class:step-text={step.step_type === 'text_input'}
+					onclick={() => editStep(step)}
+					onkeydown={(e) => handleCardKeyDown(e, step)}
+					tabindex="0"
+					role="button"
+					aria-label="Edit step: {step.step_label || step.step_key}"
+				>
 					<div class="step-left">
-						<button class="step-move" onclick={() => moveStep(step, -1)} disabled={i === 0} title="Move up">↑</button>
-						<button class="step-move" onclick={() => moveStep(step, 1)} disabled={i === sortedSteps.length - 1} title="Move down">↓</button>
+						<button class="step-move" onclick={(e) => { e.stopPropagation(); moveStep(step, -1); }} disabled={i === 0} title="Move up" aria-label="Move step up">
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+						</button>
+						<button class="step-move" onclick={(e) => { e.stopPropagation(); moveStep(step, 1); }} disabled={i === sortedSteps.length - 1} title="Move down" aria-label="Move step down">
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+						</button>
 					</div>
 					<div class="step-number">{i + 1}</div>
 					<div class="step-content">
 						<div class="step-header">
 							<span class="step-label">{step.step_label || step.step_key}</span>
 							<div class="step-badges">
-								<span class="step-type-badge">{step.step_type.replace('_', ' ')}</span>
+								<span class="step-type-badge badge-{step.step_type}">{step.step_type.replace('_', ' ')}</span>
 								{#if step.input_variable}
 									<span class="step-var-badge"> {step.input_variable}</span>
 								{/if}
@@ -361,8 +382,20 @@
 						</div>
 					</div>
 					<div class="step-actions">
-						<button class="btn-icon" onclick={() => editStep(step)} title="Edit"></button>
-						<button class="btn-icon danger" onclick={() => promptDelete(step.id)} title="Delete"></button>
+						<button class="btn-icon" onclick={(e) => { e.stopPropagation(); editStep(step); }} title="Edit" aria-label="Edit step">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+								<path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+							</svg>
+						</button>
+						<button class="btn-icon danger" onclick={(e) => { e.stopPropagation(); promptDelete(step.id); }} title="Delete" aria-label="Delete step">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="3 6 5 6 21 6"></polyline>
+								<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+								<line x1="10" y1="11" x2="10" y2="17"></line>
+								<line x1="14" y1="11" x2="14" y2="17"></line>
+							</svg>
+						</button>
 					</div>
 				</div>
 				{#if i < sortedSteps.length - 1}
@@ -429,7 +462,11 @@
 					<div style="display: flex; flex-direction: column; gap: 8px;">
 						{#each sortedSteps.filter(s => s.input_variable) as step}
 							<div style="background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px;">
-								<div style="font-family: monospace; color: var(--accent); font-weight: 600; margin-bottom: 2px;">{step.input_variable}</div>
+								<div style="margin-bottom: 6px; margin-top: 2px;">
+									<span style="font-family: monospace; color: var(--accent); background: var(--accent-bg); padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 11px;">
+										{step.input_variable}
+									</span>
+								</div>
 								<div style="color: var(--text-tertiary); font-size: 10px; margin-bottom: 4px; font-style: italic;">From: {step.step_label || step.step_key}</div>
 								<div style="font-weight: 500; color: var(--text); min-height: 16px; background: var(--surface); padding: 2px 6px; border-radius: 4px; word-break: break-all;">
 									{testVariables[step.input_variable || ''] || '—'}
@@ -541,14 +578,23 @@
 	.flow-step {
 		width: 100%; background: var(--surface); border: 1px solid var(--border);
 		border-radius: 10px; padding: 16px 20px; display: flex; gap: 12px;
-		align-items: flex-start; transition: all 0.15s;
+		align-items: flex-start; cursor: pointer;
+		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
 	}
-	.flow-step:hover { border-color: var(--accent); box-shadow: var(--shadow); }
-	.flow-step.step-auto { border-left: 3px solid var(--info, #06b6d4); }
-	.flow-step.step-button { border-left: 3px solid var(--warning, #f59e0b); }
+	.flow-step:hover {
+		transform: translateY(-2px);
+		border-color: var(--accent);
+		box-shadow: var(--shadow-lg);
+	}
+	.flow-step:active {
+		transform: translateY(0);
+	}
+	.flow-step.step-auto { border-left: 4px solid var(--cyan, #06b6d4); }
+	.flow-step.step-button { border-left: 4px solid var(--warning, #f59e0b); }
+	.flow-step.step-text { border-left: 4px solid var(--accent, #3b82f6); }
 
 	.step-left { display: flex; flex-direction: column; gap: 2px; }
-	.step-move { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--text-tertiary); padding: 2px 4px; border-radius: 3px; }
+	.step-move { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: var(--text-tertiary); padding: 4px; border-radius: var(--radius-sm); transition: all 0.15s; }
 	.step-move:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
 	.step-move:disabled { opacity: 0.2; cursor: default; }
 
@@ -557,12 +603,41 @@
 	.step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
 	.step-label { font-weight: 600; font-size: 14px; }
 	.step-badges { display: flex; gap: 6px; }
-	.step-type-badge { background: var(--surface-hover); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: var(--text-secondary); text-transform: capitalize; }
+	.step-type-badge {
+		padding: 2px 8px;
+		border-radius: 4px;
+		font-size: 11px;
+		font-weight: 600;
+		text-transform: capitalize;
+		transition: all 0.15s ease;
+	}
+	.step-type-badge.badge-text_input {
+		background: var(--accent-bg);
+		color: var(--accent);
+	}
+	.step-type-badge.badge-auto {
+		background: var(--cyan-bg);
+		color: var(--cyan);
+	}
+	.step-type-badge.badge-button_choice {
+		background: var(--warning-bg);
+		color: var(--warning);
+	}
 	.step-var-badge { background: var(--accent-bg); color: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-family: monospace; }
 
 	.step-preview { margin-bottom: 8px; }
 	.preview-bubble { padding: 8px 12px; border-radius: 10px; font-size: 13px; max-width: 80%; line-height: 1.4; }
-	.preview-bubble.bot { background: var(--accent); color: white; border-bottom-left-radius: 4px; }
+	.preview-bubble.bot {
+		background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.04) 100%);
+		border: 1px solid rgba(59, 130, 246, 0.25);
+		color: var(--text);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		border-radius: 8px;
+		border-top-left-radius: 4px;
+		padding: 10px 14px;
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+	}
 
 	.step-choices { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
 	.choice-chip { padding: 4px 10px; border: 1px solid var(--border); border-radius: 16px; font-size: 12px; background: var(--bg); }
@@ -601,9 +676,14 @@
 	.btn-ghost { background: transparent; color: var(--text-secondary); }
 	.btn-ghost:hover { background: var(--surface-hover); color: var(--text); }
 	.btn-sm { padding: 5px 12px; font-size: 13px; }
-	.btn-icon { background: none; border: none; cursor: pointer; padding: 4px; font-size: 14px; flex-shrink: 0; border-radius: var(--radius-sm); }
-	.btn-icon:hover { background: var(--surface-hover); }
-	.btn-icon.danger:hover { color: var(--red); }
+	.btn-icon {
+		display: inline-flex; align-items: center; justify-content: center;
+		background: none; border: none; cursor: pointer; padding: 6px;
+		color: var(--text-secondary); flex-shrink: 0; border-radius: var(--radius-sm);
+		transition: all 0.15s ease;
+	}
+	.btn-icon:hover { background: var(--surface-hover); color: var(--text); }
+	.btn-icon.danger:hover { background: var(--red-bg); color: var(--red); }
 
 	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
 	.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 560px; max-width: 95vw; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
