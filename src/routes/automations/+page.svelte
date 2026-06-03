@@ -10,6 +10,7 @@
 	let showDeleteConfirm = $state(false);
 	let deletingId = $state<number | null>(null);
 	let newAutomation = $state({ name: '', trigger_type: 'keyword', trigger_value: '' });
+	let editingAutomation = $state<Automation | null>(null);
 
 	onMount(async () => {
 		await loadAutomations();
@@ -26,16 +27,34 @@
 		}
 	}
 
-	async function addAutomation() {
+	async function saveAutomation() {
 		try {
-			await api.createAutomation(newAutomation);
-			showToast('Automation added.', 'success');
+			if (editingAutomation) {
+				await api.updateAutomation(editingAutomation.id, newAutomation);
+				showToast('Automation updated.', 'success');
+			} else {
+				await api.createAutomation(newAutomation);
+				showToast('Automation added.', 'success');
+			}
 			showForm = false;
+			editingAutomation = null;
 			newAutomation = { name: '', trigger_type: 'keyword', trigger_value: '' };
 			await loadAutomations();
 		} catch (err) {
-			showToast('Could not add automation. Check your fields and try again.', 'error');
+			showToast('Could not save automation. Check your fields and try again.', 'error');
 		}
+	}
+
+	function editAutomation(auto: Automation) {
+		editingAutomation = auto;
+		newAutomation = { name: auto.name || '', trigger_type: auto.trigger_type || 'keyword', trigger_value: auto.trigger_value || '' };
+		showForm = true;
+	}
+
+	function openNewAutomation() {
+		editingAutomation = null;
+		newAutomation = { name: '', trigger_type: 'keyword', trigger_value: '' };
+		showForm = true;
 	}
 
 	function promptDelete(id: number) {
@@ -74,7 +93,7 @@
 			<span class="breadcrumb-icon"></span>
 			<h1>Automations</h1>
 		</div>
-		<button class="btn btn-primary" onclick={() => showForm = true}>+ Add Automation</button>
+		<button class="btn btn-primary" onclick={openNewAutomation}>+ Add Automation</button>
 	</header>
 
 	{#if loading}
@@ -82,7 +101,14 @@
 	{:else}
 		<div class="card-list">
 			{#each automations as auto}
-				<div class="card">
+				<div 
+					class="card clickable-card" 
+					onclick={() => editAutomation(auto)}
+					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editAutomation(auto); } }}
+					tabindex="0"
+					role="button"
+					aria-label="Edit automation: {auto.name}"
+				>
 					<div class="card-content">
 						<div class="card-label">{auto.name || 'Unnamed'}</div>
 						<div class="card-trigger">
@@ -90,7 +116,22 @@
 							<span class="trigger-value">"{auto.trigger_value || '—'}"</span>
 						</div>
 					</div>
-					<button class="btn-icon danger" onclick={() => promptDelete(auto.id)}></button>
+					<div class="card-actions" style="display: flex; gap: 8px; align-items: center;">
+						<button class="btn-icon" onclick={(e) => { e.stopPropagation(); editAutomation(auto); }} title="Edit" aria-label="Edit automation">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+								<path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+							</svg>
+						</button>
+						<button class="btn-icon danger" onclick={(e) => { e.stopPropagation(); promptDelete(auto.id); }} title="Delete" aria-label="Delete automation">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="3 6 5 6 21 6"></polyline>
+								<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+								<line x1="10" y1="11" x2="10" y2="17"></line>
+								<line x1="14" y1="11" x2="14" y2="17"></line>
+							</svg>
+						</button>
+					</div>
 				</div>
 			{:else}
 				<div class="empty-state">
@@ -106,10 +147,12 @@
 	<div class="modal-overlay" onclick={e => e.target === e.currentTarget && (showForm = false)} role="presentation">
 		<div class="modal">
 			<div class="modal-header">
-				<h3>Add Automation</h3>
-				<button class="btn-icon" onclick={() => showForm = false}></button>
+				<h3>{editingAutomation ? 'Edit Automation' : 'Add Automation'}</h3>
+				<button class="btn-icon" onclick={() => { showForm = false; editingAutomation = null; }} aria-label="Close modal">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+				</button>
 			</div>
-			<form onsubmit={e => { e.preventDefault(); addAutomation(); }}>
+			<form onsubmit={e => { e.preventDefault(); saveAutomation(); }}>
 				<div class="form-group">
 					<label>Name</label>
 					<input type="text" bind:value={newAutomation.name} placeholder="Welcome message" />
@@ -128,8 +171,8 @@
 					</div>
 				</div>
 				<div class="form-actions">
-					<button type="button" class="btn btn-ghost" onclick={() => showForm = false}>Cancel</button>
-					<button type="submit" class="btn btn-primary">Add Automation</button>
+					<button type="button" class="btn btn-ghost" onclick={() => { showForm = false; editingAutomation = null; }}>Cancel</button>
+					<button type="submit" class="btn btn-primary">{editingAutomation ? 'Save Changes' : 'Add Automation'}</button>
 				</div>
 			</form>
 		</div>
@@ -143,7 +186,19 @@
 	.breadcrumb-icon { font-size: 20px; }
 	.breadcrumb h1 { font-size: 24px; font-weight: 600; }
 	.card-list { display: flex; flex-direction: column; gap: 12px; }
-	.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; gap: 16px; }
+	.card { 
+		background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; gap: 16px; 
+		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+	.card.clickable-card { cursor: pointer; }
+	.card.clickable-card:hover {
+		transform: translateY(-2px);
+		border-color: var(--accent);
+		box-shadow: var(--shadow-lg);
+	}
+	.card.clickable-card:active {
+		transform: translateY(0);
+	}
 	.card-content { flex: 1; }
 	.card-label { font-weight: 600; margin-bottom: 8px; }
 	.card-trigger { display: flex; gap: 8px; align-items: center; }
@@ -157,9 +212,14 @@
 	.btn-primary:hover { background: var(--accent-hover); }
 	.btn-ghost { background: transparent; color: var(--text-secondary); }
 	.btn-ghost:hover { background: var(--surface-hover); }
-	.btn-icon { background: none; border: none; cursor: pointer; padding: 4px; font-size: 14px; flex-shrink: 0; }
-	.btn-icon:hover { background: var(--surface-hover); border-radius: var(--radius-sm); }
-	.btn-icon.danger:hover { color: var(--red); }
+	.btn-icon {
+		display: inline-flex; align-items: center; justify-content: center;
+		background: none; border: none; cursor: pointer; padding: 6px;
+		color: var(--text-secondary); flex-shrink: 0; border-radius: var(--radius-sm);
+		transition: all 0.15s ease;
+	}
+	.btn-icon:hover { background: var(--surface-hover); color: var(--text); }
+	.btn-icon.danger:hover { background: var(--red-bg); color: var(--red); }
 	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
 	.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 500px; max-width: 95vw; box-shadow: var(--shadow-lg); }
 	.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }

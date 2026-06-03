@@ -8,6 +8,7 @@
 	let loading = $state(true);
 	let showForm = $state(false);
 	let newFaq = $state({ question: '', answer: '', keywords: '' });
+	let editingFaq = $state<Faq | null>(null);
 	let showDeleteConfirm = $state(false);
 	let deletingId = $state<number | null>(null);
 
@@ -26,16 +27,34 @@
 		}
 	}
 
-	async function addFaq() {
+	async function saveFaq() {
 		try {
-			await api.createFaq(newFaq);
-			showToast('FAQ added.', 'success');
+			if (editingFaq) {
+				await api.updateFaq(editingFaq.id, newFaq);
+				showToast('FAQ updated.', 'success');
+			} else {
+				await api.createFaq(newFaq);
+				showToast('FAQ added.', 'success');
+			}
 			showForm = false;
+			editingFaq = null;
 			newFaq = { question: '', answer: '', keywords: '' };
 			await loadFaqs();
 		} catch (err) {
-			showToast('Could not add FAQ. Check your fields and try again.', 'error');
+			showToast('Could not save FAQ. Check your fields and try again.', 'error');
 		}
+	}
+
+	function editFaq(faq: Faq) {
+		editingFaq = faq;
+		newFaq = { question: faq.question || '', answer: faq.answer || '', keywords: faq.keywords || '' };
+		showForm = true;
+	}
+
+	function openNewFaq() {
+		editingFaq = null;
+		newFaq = { question: '', answer: '', keywords: '' };
+		showForm = true;
 	}
 
 	function promptDelete(id: number) {
@@ -74,7 +93,7 @@
 			<span class="breadcrumb-icon"></span>
 			<h1>FAQs</h1>
 		</div>
-		<button class="btn btn-primary" onclick={() => showForm = true}>+ Add FAQ</button>
+		<button class="btn btn-primary" onclick={openNewFaq}>+ Add FAQ</button>
 	</header>
 
 	{#if loading}
@@ -82,7 +101,14 @@
 	{:else}
 		<div class="card-list">
 			{#each faqs as faq}
-				<div class="card">
+				<div 
+					class="card clickable-card" 
+					onclick={() => editFaq(faq)}
+					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editFaq(faq); } }}
+					tabindex="0"
+					role="button"
+					aria-label="Edit FAQ: {faq.question}"
+				>
 					<div class="card-content">
 						<div class="card-question">Q: {faq.question || '—'}</div>
 						<div class="card-answer">A: {faq.answer || '—'}</div>
@@ -94,7 +120,22 @@
 							</div>
 						{/if}
 					</div>
-					<button class="btn-icon danger" onclick={() => promptDelete(faq.id)}></button>
+					<div class="card-actions">
+						<button class="btn-icon" onclick={(e) => { e.stopPropagation(); editFaq(faq); }} title="Edit" aria-label="Edit FAQ">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+								<path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+							</svg>
+						</button>
+						<button class="btn-icon danger" onclick={(e) => { e.stopPropagation(); promptDelete(faq.id); }} title="Delete" aria-label="Delete FAQ">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="3 6 5 6 21 6"></polyline>
+								<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+								<line x1="10" y1="11" x2="10" y2="17"></line>
+								<line x1="14" y1="11" x2="14" y2="17"></line>
+							</svg>
+						</button>
+					</div>
 				</div>
 			{:else}
 				<div class="empty-state">
@@ -110,10 +151,12 @@
 	<div class="modal-overlay" onclick={e => e.target === e.currentTarget && (showForm = false)} role="presentation">
 		<div class="modal">
 			<div class="modal-header">
-				<h3>Add FAQ</h3>
-				<button class="btn-icon" onclick={() => showForm = false}></button>
+				<h3>{editingFaq ? 'Edit FAQ' : 'Add FAQ'}</h3>
+				<button class="btn-icon" onclick={() => { showForm = false; editingFaq = null; }} aria-label="Close modal">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+				</button>
 			</div>
-			<form onsubmit={e => { e.preventDefault(); addFaq(); }}>
+			<form onsubmit={e => { e.preventDefault(); saveFaq(); }}>
 				<div class="form-group">
 					<label>Question</label>
 					<input type="text" bind:value={newFaq.question} placeholder="What do customers ask?" />
@@ -127,8 +170,8 @@
 					<input type="text" bind:value={newFaq.keywords} placeholder="price, cost, how much" />
 				</div>
 				<div class="form-actions">
-					<button type="button" class="btn btn-ghost" onclick={() => showForm = false}>Cancel</button>
-					<button type="submit" class="btn btn-primary">Add FAQ</button>
+					<button type="button" class="btn btn-ghost" onclick={() => { showForm = false; editingFaq = null; }}>Cancel</button>
+					<button type="submit" class="btn btn-primary">{editingFaq ? 'Save Changes' : 'Add FAQ'}</button>
 				</div>
 			</form>
 		</div>
@@ -142,7 +185,19 @@
 	.breadcrumb-icon { font-size: 20px; }
 	.breadcrumb h1 { font-size: 24px; font-weight: 600; }
 	.card-list { display: flex; flex-direction: column; gap: 12px; }
-	.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; gap: 16px; }
+	.card { 
+		background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; gap: 16px; 
+		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+	.card.clickable-card { cursor: pointer; }
+	.card.clickable-card:hover {
+		transform: translateY(-2px);
+		border-color: var(--accent);
+		box-shadow: var(--shadow-lg);
+	}
+	.card.clickable-card:active {
+		transform: translateY(0);
+	}
 	.card-content { flex: 1; }
 	.card-question { font-weight: 600; margin-bottom: 8px; }
 	.card-answer { color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5; }
@@ -156,9 +211,15 @@
 	.btn-primary:hover { background: var(--accent-hover); }
 	.btn-ghost { background: transparent; color: var(--text-secondary); }
 	.btn-ghost:hover { background: var(--surface-hover); }
-	.btn-icon { background: none; border: none; cursor: pointer; padding: 4px; font-size: 14px; flex-shrink: 0; }
-	.btn-icon:hover { background: var(--surface-hover); border-radius: var(--radius-sm); }
-	.btn-icon.danger:hover { color: var(--red); }
+	.btn-sm { padding: 4px 12px; font-size: 13px; }
+	.btn-icon {
+		display: inline-flex; align-items: center; justify-content: center;
+		background: none; border: none; cursor: pointer; padding: 6px;
+		color: var(--text-secondary); flex-shrink: 0; border-radius: var(--radius-sm);
+		transition: all 0.15s ease;
+	}
+	.btn-icon:hover { background: var(--surface-hover); color: var(--text); }
+	.btn-icon.danger:hover { background: var(--red-bg); color: var(--red); }
 	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
 	.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 500px; max-width: 95vw; box-shadow: var(--shadow-lg); }
 	.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }

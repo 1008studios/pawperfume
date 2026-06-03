@@ -10,6 +10,7 @@
 	let showDeleteConfirm = $state(false);
 	let deletingId = $state<number | null>(null);
 	let newTag = $state({ tagKey: '', tagLabel: '', color: '#8b5cf6' });
+	let editingTag = $state<Tag | null>(null);
 
 	onMount(async () => {
 		await loadTags();
@@ -26,16 +27,34 @@
 		}
 	}
 
-	async function addTag() {
+	async function saveTag() {
 		try {
-			await api.createTag(newTag);
-			showToast('Tag added.', 'success');
+			if (editingTag) {
+				await api.updateTag(editingTag.id, newTag);
+				showToast('Tag updated.', 'success');
+			} else {
+				await api.createTag(newTag);
+				showToast('Tag added.', 'success');
+			}
 			showForm = false;
+			editingTag = null;
 			newTag = { tagKey: '', tagLabel: '', color: '#8b5cf6' };
 			await loadTags();
 		} catch (err) {
-			showToast('Could not add tag. Check your fields and try again.', 'error');
+			showToast('Could not save tag. Check your fields and try again.', 'error');
 		}
+	}
+
+	function editTag(tag: Tag) {
+		editingTag = tag;
+		newTag = { tagKey: tag.tag_key || '', tagLabel: tag.tag_label || '', color: tag.color || '#8b5cf6' };
+		showForm = true;
+	}
+
+	function openNewTag() {
+		editingTag = null;
+		newTag = { tagKey: '', tagLabel: '', color: '#8b5cf6' };
+		showForm = true;
 	}
 
 	function promptDelete(id: number) {
@@ -74,7 +93,7 @@
 			<span class="breadcrumb-icon"></span>
 			<h1>Tags</h1>
 		</div>
-		<button class="btn btn-primary" onclick={() => showForm = true}>+ Add Tag</button>
+		<button class="btn btn-primary" onclick={openNewTag}>+ Add Tag</button>
 	</header>
 
 	{#if loading}
@@ -82,11 +101,34 @@
 	{:else}
 		<div class="tags-grid">
 			{#each tags as tag}
-				<div class="tag-card" style="border-color: {tag.color}40">
+				<div 
+					class="tag-card clickable-card" 
+					style="border-color: {tag.color}40"
+					onclick={() => editTag(tag)}
+					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editTag(tag); } }}
+					tabindex="0"
+					role="button"
+					aria-label="Edit tag: {tag.tag_label || tag.tag_key}"
+				>
 					<div class="tag-preview" style="background: {tag.color}20; color: {tag.color}">
 						 {tag.tag_label || tag.tag_key}
 					</div>
-					<button class="btn-icon danger" onclick={() => promptDelete(tag.id)}></button>
+					<div class="tag-actions" style="display: flex; gap: 4px; margin-left: 8px;">
+						<button class="btn-icon" onclick={(e) => { e.stopPropagation(); editTag(tag); }} title="Edit" aria-label="Edit tag" style="color: var(--text-secondary);">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+								<path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+							</svg>
+						</button>
+						<button class="btn-icon danger" onclick={(e) => { e.stopPropagation(); promptDelete(tag.id); }} title="Delete" aria-label="Delete tag">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="3 6 5 6 21 6"></polyline>
+								<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+								<line x1="10" y1="11" x2="10" y2="17"></line>
+								<line x1="14" y1="11" x2="14" y2="17"></line>
+							</svg>
+						</button>
+					</div>
 				</div>
 			{:else}
 				<div class="empty-state">
@@ -102,10 +144,12 @@
 	<div class="modal-overlay" onclick={e => e.target === e.currentTarget && (showForm = false)} role="presentation">
 		<div class="modal">
 			<div class="modal-header">
-				<h3>Add Tag</h3>
-				<button class="btn-icon" onclick={() => showForm = false}></button>
+				<h3>{editingTag ? 'Edit Tag' : 'Add Tag'}</h3>
+				<button class="btn-icon" onclick={() => { showForm = false; editingTag = null; }} aria-label="Close modal">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+				</button>
 			</div>
-			<form onsubmit={e => { e.preventDefault(); addTag(); }}>
+			<form onsubmit={e => { e.preventDefault(); saveTag(); }}>
 				<div class="form-grid">
 					<div class="form-group">
 						<label>Key</label>
@@ -125,8 +169,8 @@
 					</div>
 				</div>
 				<div class="form-actions">
-					<button type="button" class="btn btn-ghost" onclick={() => showForm = false}>Cancel</button>
-					<button type="submit" class="btn btn-primary">Add Tag</button>
+					<button type="button" class="btn btn-ghost" onclick={() => { showForm = false; editingTag = null; }}>Cancel</button>
+					<button type="submit" class="btn btn-primary">{editingTag ? 'Save Changes' : 'Add Tag'}</button>
 				</div>
 			</form>
 		</div>
@@ -140,7 +184,19 @@
 	.breadcrumb-icon { font-size: 20px; }
 	.breadcrumb h1 { font-size: 24px; font-weight: 600; }
 	.tags-grid { display: flex; flex-wrap: wrap; gap: 12px; }
-	.tag-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+	.tag-card { 
+		background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; 
+		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+	.tag-card.clickable-card { cursor: pointer; }
+	.tag-card.clickable-card:hover {
+		transform: translateY(-2px);
+		border-color: var(--accent);
+		box-shadow: var(--shadow-lg);
+	}
+	.tag-card.clickable-card:active {
+		transform: translateY(0);
+	}
 	.tag-preview { padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 600; }
 	.empty-state { text-align: center; padding: 64px; color: var(--text-secondary); width: 100%; }
 	.empty-icon { font-size: 48px; margin-bottom: 12px; }
@@ -150,9 +206,14 @@
 	.btn-primary:hover { background: var(--accent-hover); }
 	.btn-ghost { background: transparent; color: var(--text-secondary); }
 	.btn-ghost:hover { background: var(--surface-hover); }
-	.btn-icon { background: none; border: none; cursor: pointer; padding: 4px 8px; font-size: 14px; color: var(--text-tertiary); }
-	.btn-icon:hover { color: var(--text); }
-	.btn-icon.danger:hover { color: var(--red); }
+	.btn-icon {
+		display: inline-flex; align-items: center; justify-content: center;
+		background: none; border: none; cursor: pointer; padding: 6px;
+		color: var(--text-secondary); flex-shrink: 0; border-radius: var(--radius-sm);
+		transition: all 0.15s ease;
+	}
+	.btn-icon:hover { background: var(--surface-hover); color: var(--text); }
+	.btn-icon.danger:hover { background: var(--red-bg); color: var(--red); }
 	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
 	.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 500px; max-width: 95vw; box-shadow: var(--shadow-lg); }
 	.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }

@@ -10,6 +10,7 @@
 	let showDeleteConfirm = $state(false);
 	let deletingId = $state<number | null>(null);
 	let newReply = $state({ label: '', message: '' });
+	let editingReply = $state<QuickReply | null>(null);
 
 	onMount(async () => {
 		await loadQuickReplies();
@@ -26,16 +27,34 @@
 		}
 	}
 
-	async function addReply() {
+	async function saveReply() {
 		try {
-			await api.createQuickReply(newReply);
-			showToast('Quick reply added.', 'success');
+			if (editingReply) {
+				await api.updateQuickReply(editingReply.id, newReply);
+				showToast('Quick reply updated.', 'success');
+			} else {
+				await api.createQuickReply(newReply);
+				showToast('Quick reply added.', 'success');
+			}
 			showForm = false;
+			editingReply = null;
 			newReply = { label: '', message: '' };
 			await loadQuickReplies();
 		} catch (err) {
-			showToast('Could not add reply. Check your fields and try again.', 'error');
+			showToast('Could not save reply. Check your fields and try again.', 'error');
 		}
+	}
+
+	function editReply(reply: QuickReply) {
+		editingReply = reply;
+		newReply = { label: reply.label || '', message: reply.message || '' };
+		showForm = true;
+	}
+
+	function openNewReply() {
+		editingReply = null;
+		newReply = { label: '', message: '' };
+		showForm = true;
 	}
 
 	function promptDelete(id: number) {
@@ -79,7 +98,7 @@
 			<span class="breadcrumb-icon"></span>
 			<h1>Quick Replies</h1>
 		</div>
-		<button class="btn btn-primary" onclick={() => showForm = true}>+ Add Reply</button>
+		<button class="btn btn-primary" onclick={openNewReply}>+ Add Reply</button>
 	</header>
 
 	{#if loading}
@@ -87,14 +106,34 @@
 	{:else}
 		<div class="card-list">
 			{#each quickReplies as reply}
-				<div class="card">
+				<div 
+					class="card clickable-card" 
+					onclick={() => editReply(reply)}
+					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editReply(reply); } }}
+					tabindex="0"
+					role="button"
+					aria-label="Edit quick reply: {reply.label}"
+				>
 					<div class="card-content">
 						<div class="card-label"> {reply.label || '—'}</div>
 						<div class="card-message">{reply.message || '—'}</div>
 					</div>
 					<div class="card-actions">
-						<button class="btn btn-ghost btn-sm" onclick={() => copyMessage(reply.message || '')}>Copy</button>
-						<button class="btn-icon danger" onclick={() => promptDelete(reply.id)}></button>
+						<button class="btn btn-ghost btn-sm" onclick={(e) => { e.stopPropagation(); copyMessage(reply.message || ''); }} aria-label="Copy quick reply message">Copy</button>
+						<button class="btn-icon" onclick={(e) => { e.stopPropagation(); editReply(reply); }} title="Edit" aria-label="Edit quick reply">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+								<path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+							</svg>
+						</button>
+						<button class="btn-icon danger" onclick={(e) => { e.stopPropagation(); promptDelete(reply.id); }} title="Delete" aria-label="Delete quick reply">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="3 6 5 6 21 6"></polyline>
+								<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+								<line x1="10" y1="11" x2="10" y2="17"></line>
+								<line x1="14" y1="11" x2="14" y2="17"></line>
+							</svg>
+						</button>
 					</div>
 				</div>
 			{:else}
@@ -111,10 +150,12 @@
 	<div class="modal-overlay" onclick={e => e.target === e.currentTarget && (showForm = false)} role="presentation">
 		<div class="modal">
 			<div class="modal-header">
-				<h3>Add Quick Reply</h3>
-				<button class="btn-icon" onclick={() => showForm = false}></button>
+				<h3>{editingReply ? 'Edit Quick Reply' : 'Add Quick Reply'}</h3>
+				<button class="btn-icon" onclick={() => { showForm = false; editingReply = null; }} aria-label="Close modal">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+				</button>
 			</div>
-			<form onsubmit={e => { e.preventDefault(); addReply(); }}>
+			<form onsubmit={e => { e.preventDefault(); saveReply(); }}>
 				<div class="form-group">
 					<label>Label</label>
 					<input type="text" bind:value={newReply.label} placeholder="Short name" />
@@ -124,8 +165,8 @@
 					<textarea bind:value={newReply.message} placeholder="Full message..." rows="4"></textarea>
 				</div>
 				<div class="form-actions">
-					<button type="button" class="btn btn-ghost" onclick={() => showForm = false}>Cancel</button>
-					<button type="submit" class="btn btn-primary">Add Reply</button>
+					<button type="button" class="btn btn-ghost" onclick={() => { showForm = false; editingReply = null; }}>Cancel</button>
+					<button type="submit" class="btn btn-primary">{editingReply ? 'Save Changes' : 'Add Reply'}</button>
 				</div>
 			</form>
 		</div>
@@ -139,7 +180,19 @@
 	.breadcrumb-icon { font-size: 20px; }
 	.breadcrumb h1 { font-size: 24px; font-weight: 600; }
 	.card-list { display: flex; flex-direction: column; gap: 12px; }
-	.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; gap: 16px; }
+	.card { 
+		background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; gap: 16px; 
+		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+	.card.clickable-card { cursor: pointer; }
+	.card.clickable-card:hover {
+		transform: translateY(-2px);
+		border-color: var(--accent);
+		box-shadow: var(--shadow-lg);
+	}
+	.card.clickable-card:active {
+		transform: translateY(0);
+	}
 	.card-content { flex: 1; }
 	.card-label { font-weight: 600; margin-bottom: 8px; }
 	.card-message { color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap; }
@@ -153,9 +206,14 @@
 	.btn-ghost { background: transparent; color: var(--text-secondary); }
 	.btn-ghost:hover { background: var(--surface-hover); }
 	.btn-sm { padding: 4px 12px; font-size: 13px; }
-	.btn-icon { background: none; border: none; cursor: pointer; padding: 4px; font-size: 14px; }
-	.btn-icon:hover { background: var(--surface-hover); border-radius: var(--radius-sm); }
-	.btn-icon.danger:hover { color: var(--red); }
+	.btn-icon {
+		display: inline-flex; align-items: center; justify-content: center;
+		background: none; border: none; cursor: pointer; padding: 6px;
+		color: var(--text-secondary); flex-shrink: 0; border-radius: var(--radius-sm);
+		transition: all 0.15s ease;
+	}
+	.btn-icon:hover { background: var(--surface-hover); color: var(--text); }
+	.btn-icon.danger:hover { background: var(--red-bg); color: var(--red); }
 	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
 	.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 500px; max-width: 95vw; box-shadow: var(--shadow-lg); }
 	.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }

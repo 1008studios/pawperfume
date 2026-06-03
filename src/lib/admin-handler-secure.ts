@@ -378,6 +378,83 @@ export async function handleAdmin(path: string, method: string, request: Request
 			return json({ ok: true });
 		}
 
+		const faqMatch = route.match(/^faqs\/(\d+)$/);
+		if (faqMatch && method === 'PUT') {
+			const id = parseInt(faqMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			if (body.question !== undefined) { sets.push(`question = $${n++}`); vals.push(body.question); }
+			if (body.answer !== undefined) { sets.push(`answer = $${n++}`); vals.push(body.answer); }
+			if (body.keywords !== undefined) { sets.push(`keywords = $${n++}`); vals.push(body.keywords); }
+			if (body.category !== undefined) { sets.push(`category = $${n++}`); vals.push(body.category); }
+			if (body.sort_order !== undefined) { sets.push(`sort_order = $${n++}`); vals.push(Number(body.sort_order)); }
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE faqs SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
+		const qrMatch = route.match(/^quick-replies\/(\d+)$/);
+		if (qrMatch && method === 'PUT') {
+			const id = parseInt(qrMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			if (body.label !== undefined) { sets.push(`label = $${n++}`); vals.push(body.label); }
+			if (body.message !== undefined) { sets.push(`message = $${n++}`); vals.push(body.message); }
+			if (body.sort_order !== undefined) { sets.push(`sort_order = $${n++}`); vals.push(Number(body.sort_order)); }
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE quick_replies SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
+		const autMatch = route.match(/^automations\/(\d+)$/);
+		if (autMatch && method === 'PUT') {
+			const id = parseInt(autMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			if (body.name !== undefined) { sets.push(`name = $${n++}`); vals.push(body.name); }
+			if (body.trigger_type !== undefined) { sets.push(`trigger_type = $${n++}`); vals.push(body.trigger_type); }
+			if (body.trigger_value !== undefined) { sets.push(`trigger_value = $${n++}`); vals.push(body.trigger_value); }
+			if (body.steps !== undefined) { 
+				sets.push(`steps = $${n++}`); 
+				vals.push(typeof body.steps === 'string' ? body.steps : JSON.stringify(body.steps)); 
+			}
+			if (body.is_active !== undefined) { sets.push(`is_active = $${n++}`); vals.push(!!body.is_active); }
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE automations SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
+		const tagMatch = route.match(/^tags\/(\d+)$/);
+		if (tagMatch && method === 'PUT') {
+			const id = parseInt(tagMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			if (body.tagKey !== undefined) { sets.push(`tag_key = $${n++}`); vals.push(body.tagKey); }
+			if (body.tag_key !== undefined) { sets.push(`tag_key = $${n++}`); vals.push(body.tag_key); }
+			if (body.tagLabel !== undefined) { sets.push(`tag_label = $${n++}`); vals.push(body.tagLabel); }
+			if (body.tag_label !== undefined) { sets.push(`tag_label = $${n++}`); vals.push(body.tag_label); }
+			if (body.color !== undefined) { sets.push(`color = $${n++}`); vals.push(body.color); }
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE tenant_tags SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
 		// POST routes - FIX: All parameterized
 		if (method === 'POST') {
 			// Rate limit POST operations
