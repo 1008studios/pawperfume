@@ -460,22 +460,82 @@
 				</div>
 			{/if}
 		{:else}
-			<div class="no-selection">
-				<div class="empty-icon">
-					<svg width="64" height="64" viewBox="0 0 24 24" fill="url(#messenger-grad)" style="filter: drop-shadow(0 4px 12px rgba(0, 132, 255, 0.15));">
-						<defs>
-							<linearGradient id="messenger-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-								<stop offset="0%" stop-color="#0066ff"/>
-								<stop offset="50%" stop-color="#0084ff"/>
-								<stop offset="100%" stop-color="#00c6ff"/>
-							</linearGradient>
-						</defs>
-						<path d="M12 2C6.477 2 2 6.14 2 11.24c0 2.914 1.455 5.518 3.733 7.172V22l3.414-1.875A10.87 10.87 0 0012 20.48c5.523 0 10-4.14 10-9.24C22 6.14 17.523 2 12 2zm1.146 11.53l-2.072-2.215-4.043 2.215 4.443-4.717 2.11 2.215 4.004-2.215-4.442 4.722z"/>
-					</svg>
+			<!-- Sample chat preview when no conversation is selected -->
+			<div class="sample-chat">
+				<div class="sample-chat-header">
+					<div class="chat-user">
+						<div class="conv-avatar large" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+							M
+							<span class="sample-online-dot"></span>
+						</div>
+						<div>
+							<div class="chat-user-name">Maria Santos</div>
+							<div class="chat-user-status sample-status">Active now</div>
+						</div>
+					</div>
+					<span class="sample-badge">Preview</span>
 				</div>
-				<h3>Messenger Inbox</h3>
-				<p>Select a conversation to start chatting</p>
-				<p class="hint">Use <kbd>Ctrl</kbd>+<kbd>K</kbd> for quick actions</p>
+				<div class="sample-messages">
+					<!-- Bot greeting -->
+					<div class="sample-msg sample-bot">
+						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">B</div>
+						<div class="sample-bubble-wrap">
+							<div class="sample-bubble bot">Hi! 👋 Welcome to Pawperfume. What's your pet's name?</div>
+							<div class="sample-meta">Bot · 10:02 AM</div>
+						</div>
+					</div>
+					<!-- User reply -->
+					<div class="sample-msg sample-user">
+						<div class="sample-bubble-wrap" style="align-items: flex-end;">
+							<div class="sample-bubble user">My dog's name is Coco! 🐶</div>
+							<div class="sample-meta" style="text-align: right;">You · 10:03 AM ✓✓</div>
+						</div>
+						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">M</div>
+					</div>
+					<!-- Bot reply -->
+					<div class="sample-msg sample-bot">
+						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">B</div>
+						<div class="sample-bubble-wrap">
+							<div class="sample-bubble bot">Aww, Coco! 🐾 What scent is Coco into? Choose one:</div>
+							<div class="sample-choices">
+								<span class="sample-choice">🌸 Floral</span>
+								<span class="sample-choice">🌿 Fresh</span>
+								<span class="sample-choice">🍦 Sweet</span>
+							</div>
+							<div class="sample-meta">Bot · 10:03 AM</div>
+						</div>
+					</div>
+					<!-- User picks -->
+					<div class="sample-msg sample-user">
+						<div class="sample-bubble-wrap" style="align-items: flex-end;">
+							<div class="sample-bubble user">🌸 Floral</div>
+							<div class="sample-meta" style="text-align: right;">You · 10:04 AM ✓✓</div>
+						</div>
+						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">M</div>
+					</div>
+					<!-- Bot final -->
+					<div class="sample-msg sample-bot">
+						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">B</div>
+						<div class="sample-bubble-wrap">
+							<div class="sample-bubble bot">Perfect! I'll prepare a Floral bundle for Coco. Your order is being processed 🎀</div>
+							<div class="sample-meta">Bot · 10:04 AM</div>
+						</div>
+					</div>
+					<!-- Typing indicator -->
+					<div class="sample-msg sample-bot">
+						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">M</div>
+						<div class="sample-typing">
+							<span></span><span></span><span></span>
+						</div>
+					</div>
+				</div>
+				<div class="sample-reply">
+					<div class="sample-reply-input">Select a real conversation to reply →</div>
+					<button class="sample-send-btn" disabled aria-label="Send (disabled preview)">
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+					</button>
+				</div>
+				<div class="sample-hint">← Select a conversation to start responding</div>
 			</div>
 		{/if}
 	</div>
@@ -712,6 +772,99 @@
 		transition: background 0.15s;
 	}
 	.mobile-back-btn:hover { background: var(--surface-hover); }
+
+	/* ── Sample Chat Preview ─────────────────────────────────── */
+	.sample-chat {
+		flex: 1; display: flex; flex-direction: column; background: var(--bg);
+		min-width: 0;
+	}
+	.sample-chat-header {
+		padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex;
+		align-items: center; justify-content: space-between; background: var(--surface);
+		flex-shrink: 0;
+	}
+	.sample-online-dot {
+		position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px;
+		border-radius: 50%; background: #22c55e; border: 2px solid var(--surface);
+	}
+	.sample-status { color: #22c55e; font-style: italic; }
+	.sample-badge {
+		font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+		background: rgba(99, 102, 241, 0.12); color: #6366f1; padding: 3px 8px;
+		border-radius: 20px; border: 1px solid rgba(99, 102, 241, 0.2);
+	}
+	.sample-messages {
+		flex: 1; overflow-y: auto; padding: 20px 20px 12px;
+		display: flex; flex-direction: column; gap: 12px;
+	}
+	.sample-msg { display: flex; gap: 8px; align-items: flex-end; }
+	.sample-bot { justify-content: flex-start; }
+	.sample-user { justify-content: flex-end; }
+	.sample-avatar-sm {
+		width: 28px; height: 28px; border-radius: 50%; color: white;
+		display: flex; align-items: center; justify-content: center;
+		font-weight: 700; font-size: 11px; flex-shrink: 0;
+	}
+	.sample-bubble-wrap { display: flex; flex-direction: column; max-width: 62%; gap: 4px; }
+	.sample-bubble {
+		padding: 10px 14px; font-size: 14px; line-height: 1.5;
+		word-wrap: break-word;
+	}
+	.sample-bubble.bot {
+		background: var(--surface3, var(--surface));
+		border: 1px solid var(--border);
+		border-radius: 18px 18px 18px 4px;
+		color: var(--text);
+	}
+	.sample-bubble.user {
+		background: var(--accent);
+		color: white;
+		border-radius: 18px 18px 4px 18px;
+	}
+	.sample-meta { font-size: 10px; color: var(--text-tertiary); padding: 0 4px; }
+	.sample-choices { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+	.sample-choice {
+		padding: 5px 12px; border: 1px solid var(--accent); border-radius: 16px;
+		font-size: 12px; color: var(--accent); background: var(--accent-bg);
+		cursor: default; font-weight: 500;
+	}
+	.sample-typing {
+		display: inline-flex; gap: 4px; padding: 12px 16px;
+		background: var(--surface3, var(--surface));
+		border: 1px solid var(--border);
+		border-radius: 18px 18px 18px 4px;
+	}
+	.sample-typing span {
+		width: 7px; height: 7px; border-radius: 50%;
+		background: var(--text-tertiary);
+		animation: sampleTyping 1.4s infinite ease-in-out;
+	}
+	.sample-typing span:nth-child(2) { animation-delay: 0.2s; }
+	.sample-typing span:nth-child(3) { animation-delay: 0.4s; }
+	@keyframes sampleTyping {
+		0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+		40% { transform: translateY(-4px); opacity: 1; }
+	}
+	.sample-reply {
+		display: flex; gap: 10px; align-items: center;
+		padding: 12px 16px; border-top: 1px solid var(--border);
+		background: var(--surface); flex-shrink: 0;
+	}
+	.sample-reply-input {
+		flex: 1; padding: 10px 16px; border-radius: 20px;
+		background: var(--surface-hover); color: var(--text-tertiary);
+		font-size: 13px; font-style: italic;
+	}
+	.sample-send-btn {
+		width: 36px; height: 36px; border-radius: 50%; background: var(--accent);
+		border: none; display: flex; align-items: center; justify-content: center;
+		color: white; opacity: 0.4; cursor: not-allowed;
+	}
+	.sample-hint {
+		text-align: center; font-size: 11px; color: var(--text-tertiary);
+		padding: 6px 16px 10px; background: var(--surface);
+		border-top: 1px solid var(--border); flex-shrink: 0;
+	}
 
 	@media (max-width: 768px) {
 		.chat-page { position: relative; }

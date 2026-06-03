@@ -131,6 +131,14 @@ export interface BotFlowStep {
 	next_step: string | null;
 	input_variable: string | null;
 	sort_order: number;
+	image_url?: string | null;
+	carousel_items?: Array<{
+		title: string;
+		subtitle: string;
+		imageUrl: string;
+		buttonLabel: string;
+		buttonNextStep: string;
+	}> | null;
 }
 
 export interface Automation {
