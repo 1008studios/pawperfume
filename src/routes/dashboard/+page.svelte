@@ -282,7 +282,16 @@
 								<td><a href="/chats" class="btn btn-ghost btn-sm">Open</a></td>
 							</tr>
 						{:else}
-							<tr><td colspan="5" class="empty-state"><div class="empty-icon"></div><p><strong>No conversations yet</strong></p></td></tr>
+							<tr>
+								<td colspan="5" class="empty-state">
+									<div class="empty-icon" style="margin-bottom: 8px;">
+										<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;">
+											<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+										</svg>
+									</div>
+									<p><strong>No conversations yet</strong></p>
+								</td>
+							</tr>
 						{/each}
 					</tbody>
 				</table>

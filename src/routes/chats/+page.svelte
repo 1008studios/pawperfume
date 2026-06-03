@@ -320,7 +320,11 @@
 						</div>
 					{:else}
 						<div class="empty-state">
-							<div class="empty-icon"></div>
+							<div class="empty-icon">
+								<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6; margin-bottom: 8px;">
+									<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+								</svg>
+							</div>
 							<p><strong>No messages yet</strong></p>
 							<p style="font-size:13px">Start the conversation by typing a message below.</p>
 						</div>
@@ -414,7 +418,9 @@
 						<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 6.5v0M10.5 6.5v0M5.5 10s1 1.5 2.5 1.5 2.5-1.5 2.5-1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
 					</button>
 					<button class="btn-icon" onclick={() => showQuickRepliesPanel = !showQuickRepliesPanel} title="Quick replies">
-						
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+						</svg>
 					</button>
 				</div>
 				<div class="reply-input-wrap">
@@ -449,7 +455,18 @@
 			{/if}
 		{:else}
 			<div class="no-selection">
-				<div class="empty-icon"></div>
+				<div class="empty-icon">
+					<svg width="64" height="64" viewBox="0 0 24 24" fill="url(#messenger-grad)" style="filter: drop-shadow(0 4px 12px rgba(0, 132, 255, 0.15));">
+						<defs>
+							<linearGradient id="messenger-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+								<stop offset="0%" stop-color="#0066ff"/>
+								<stop offset="50%" stop-color="#0084ff"/>
+								<stop offset="100%" stop-color="#00c6ff"/>
+							</linearGradient>
+						</defs>
+						<path d="M12 2C6.477 2 2 6.14 2 11.24c0 2.914 1.455 5.518 3.733 7.172V22l3.414-1.875A10.87 10.87 0 0012 20.48c5.523 0 10-4.14 10-9.24C22 6.14 17.523 2 12 2zm1.146 11.53l-2.072-2.215-4.043 2.215 4.443-4.717 2.11 2.215 4.004-2.215-4.442 4.722z"/>
+					</svg>
+				</div>
 				<h3>Messenger Inbox</h3>
 				<p>Select a conversation to start chatting</p>
 				<p class="hint">Use <kbd>Ctrl</kbd>+<kbd>K</kbd> for quick actions</p>
@@ -554,10 +571,18 @@
 
 	.message-wrapper { max-width: 65%; display: flex; flex-direction: column; }
 	.message-bubble {
-		padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5;
+		padding: 8px 14px; font-size: 14px; line-height: 1.5; border: none;
 	}
-	.message.from-user .message-bubble { background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-	.message:not(.from-user) .message-bubble { background: var(--accent); color: white; border-bottom-right-radius: 4px; }
+	.message.from-user .message-bubble { 
+		background: var(--surface3); 
+		color: var(--text);
+		border-radius: 18px 18px 18px 4px; 
+	}
+	.message:not(.from-user) .message-bubble { 
+		background: var(--accent); 
+		color: white; 
+		border-radius: 18px 18px 4px 18px; 
+	}
 	.message-sender { font-size: 11px; font-weight: 600; opacity: 0.7; margin-bottom: 4px; }
 	.message-content { word-wrap: break-word; }
 	.message-media { margin-top: 8px; }
@@ -605,17 +630,18 @@
 	.attachment-preview img { height: 48px; border-radius: 6px; object-fit: cover; }
 
 	.reply-box {
-		padding: 12px 20px; border-top: 1px solid var(--border); display: flex;
-		gap: 8px; align-items: flex-end; background: var(--surface);
+		padding: 12px 16px; border-top: 1px solid var(--border); display: flex;
+		gap: 12px; align-items: center; background: var(--surface);
 	}
-	.reply-actions-left { display: flex; gap: 2px; }
+	.reply-actions-left { display: flex; gap: 6px; }
 	.reply-input-wrap { flex: 1; }
 	.reply-input-wrap textarea {
-		width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
-		background: var(--bg); color: var(--text); font-size: 14px; resize: none;
-		min-height: 36px; max-height: 120px; font-family: var(--font);
+		width: 100%; padding: 10px 16px; border: none; border-radius: 20px;
+		background: var(--surface-hover); color: var(--text); font-size: 14px; resize: none;
+		min-height: 38px; max-height: 120px; font-family: var(--font);
+		outline: none;
 	}
-	.reply-input-wrap textarea:focus { outline: none; border-color: var(--accent); }
+	.reply-input-wrap textarea:focus { background: var(--surface-active); }
 	.send-btn { padding: 8px 16px; }
 
 	.emoji-picker {
