@@ -2,9 +2,10 @@
 	import { onMount } from 'svelte';
 	import { api, fmtPeso, showToast, downloadCSV } from '$lib/api';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-import type { LedgerEntry } from '$lib/types';
+	import type { LedgerEntry } from '$lib/types';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import DonutChart from '$lib/components/DonutChart.svelte';
+	import InlineEdit from '$lib/components/InlineEdit.svelte';
 
 	let entries = $state<LedgerEntry[]>([]);
 	let loading = $state(true);
@@ -112,6 +113,18 @@ import type { LedgerEntry } from '$lib/types';
 	}
 
 	function clearFilters() { searchQuery = ''; typeFilter = 'all'; categoryFilter = 'all'; dateFrom = ''; dateTo = ''; }
+
+	async function updateField(id: number, fields: Partial<LedgerEntry>) {
+		try {
+			await api.updateFinance(id, fields);
+			showToast('Finance entry updated.', 'success');
+			await loadEntries();
+		} catch {
+			showToast('Failed to update finance entry.', 'error');
+			throw new Error('Save failed');
+		}
+	}
+
 	let hasFilters = $derived(searchQuery || typeFilter !== 'all' || categoryFilter !== 'all' || dateFrom || dateTo);
 </script>
 
@@ -241,11 +254,45 @@ import type { LedgerEntry } from '$lib/types';
 				<tbody>
 					{#each filteredEntries as entry}
 						<tr>
-							<td>{entry.date || ''}</td>
-							<td>{entry.description || '—'}</td>
-							<td>{#if entry.category}<span class="cat-tag">{entry.category}</span>{:else}—{/if}</td>
-							<td><span class="badge badge-{entry.type}">{entry.type}</span></td>
-							<td class="amount" class:text-green={entry.type === 'income'} class:text-red={entry.type === 'expense'}>{fmtPeso(entry.amount)}</td>
+							<td>
+								<InlineEdit
+									bind:value={entry.date}
+									onSave={(val) => updateField(entry.id, { date: val })}
+									placeholder="YYYY-MM-DD"
+								/>
+							</td>
+							<td>
+								<InlineEdit
+									bind:value={entry.description}
+									onSave={(val) => updateField(entry.id, { description: val })}
+									placeholder="Description..."
+								/>
+							</td>
+							<td>
+								<InlineEdit
+									bind:value={entry.category}
+									type="select"
+									options={presetCategories}
+									onSave={(val) => updateField(entry.id, { category: val })}
+									placeholder="Category..."
+								/>
+							</td>
+							<td>
+								<InlineEdit
+									bind:value={entry.type}
+									type="select"
+									options={['expense', 'income']}
+									onSave={(val) => updateField(entry.id, { type: val })}
+								/>
+							</td>
+							<td class="amount" class:text-green={entry.type === 'income'} class:text-red={entry.type === 'expense'}>
+								<InlineEdit
+									bind:value={entry.amount}
+									type="number"
+									currency={true}
+									onSave={(val) => updateField(entry.id, { amount: val })}
+								/>
+							</td>
 							<td><button class="btn-icon danger" onclick={() => promptDelete(entry.id)}></button></td>
 						</tr>
 					{:else}

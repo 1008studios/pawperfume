@@ -79,6 +79,7 @@ export async function handleAdmin(path: string, method: string, request: Request
 	try {
 		switch (route) {
 			case 'login': {
+				if (method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				// Rate limit login attempts more aggressively
 				if (!checkRateLimit(`login:${clientIp}`, 5, 300000)) {
 					return json({ error: 'Too many login attempts. Try again in 5 minutes.' }, { status: 429 });
@@ -95,6 +96,7 @@ export async function handleAdmin(path: string, method: string, request: Request
 			}
 
 			case 'status':
+				if (method !== 'GET') return json({ error: 'Method not allowed' }, { status: 405 });
 				return json({ ok: true, db: !!db, version: '3.0' });
 
 			case 'send-message': {
@@ -135,10 +137,12 @@ export async function handleAdmin(path: string, method: string, request: Request
 			}
 
 			case 'tenant-config':
+				if (method !== 'GET') return json({ error: 'Method not allowed' }, { status: 405 });
 				// FIX: Use parameterized query
 				return json((await db("SELECT * FROM tenants WHERE slug = $1", ['default']))[0] || {});
 
 			case 'conversations':
+				if (method !== 'GET') return json({ error: 'Method not allowed' }, { status: 405 });
 				// FIX: Use parameterized queries
 				return json({
 					conversations: await db('SELECT * FROM conversations WHERE tenant_id = $1 ORDER BY updated_at DESC LIMIT 50', [1]),
@@ -146,6 +150,7 @@ export async function handleAdmin(path: string, method: string, request: Request
 				});
 
 			case 'orders': {
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				// FIX: Batch queries and use parameterized
 				const [orders, custom_fields, order_statuses, column_configs] = await Promise.all([
@@ -158,56 +163,69 @@ export async function handleAdmin(path: string, method: string, request: Request
 			}
 
 			case 'automations':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM automations WHERE tenant_id = $1', [1]));
 				
 			case 'finance':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM ledger_entries WHERE tenant_id = $1 ORDER BY date DESC LIMIT 50', [1]));
 				
 			case 'faqs':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM faqs WHERE tenant_id = $1 ORDER BY sort_order', [1]));
 				
 			case 'quick-replies':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM quick_replies WHERE tenant_id = $1 ORDER BY sort_order', [1]));
 				
 			case 'custom-fields':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM tenant_custom_fields WHERE tenant_id = $1 ORDER BY sort_order', [1]));
 				
 			case 'tags':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM tenant_tags WHERE tenant_id = $1 ORDER BY tag_label', [1]));
 				
 			case 'media':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM media_assets WHERE tenant_id = $1', [1]));
 				
 			case 'bot-flow':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM bot_flow_steps WHERE tenant_id = $1 ORDER BY sort_order', [1]));
 				
 			case 'column-configs':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM column_configs WHERE tenant_id = $1 AND table_name = $2 ORDER BY sort_order', [1, String(body.tableName || 'orders')]));
 				
 			case 'finance-categories':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM tenant_finance_categories WHERE tenant_id = $1', [1]));
 				
 			case 'order-statuses':
+				if (method !== 'GET' && method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
 				if (method === 'POST') break;
 				return json(await db('SELECT * FROM tenant_order_statuses WHERE tenant_id = $1 ORDER BY sort_order', [1]));
 				
 			case 'receipt-extractions':
+				if (method !== 'GET') return json({ error: 'Method not allowed' }, { status: 405 });
 				return json(await db('SELECT * FROM receipt_extractions WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 20', [1]));
 		}
 
 		// Pattern routes - FIX: Parameterized
 		const mm = route.match(/^messages\/(\d+)$/);
 		if (mm) {
+			if (method !== 'GET') return json({ error: 'Method not allowed' }, { status: 405 });
 			return json({ 
 				messages: await db(
 					'SELECT * FROM messages WHERE tenant_id = $1 AND conversation_id = $2 ORDER BY created_at ASC LIMIT 100', 
@@ -218,7 +236,103 @@ export async function handleAdmin(path: string, method: string, request: Request
 
 		const cc = route.match(/^conversations\/(\d+)$/);
 		if (cc) {
-			return json((await db('SELECT * FROM conversations WHERE tenant_id = $1 AND id = $2', [1, parseInt(cc[1])]))[0] || {});
+			if (method === 'GET') {
+				return json((await db('SELECT * FROM conversations WHERE tenant_id = $1 AND id = $2', [1, parseInt(cc[1])]))[0] || {});
+			} else if (method === 'PUT') {
+				const id = parseInt(cc[1]);
+				if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+				const sets: string[] = [];
+				const vals: unknown[] = [];
+				let n = 1;
+				if (body.status !== undefined) { sets.push(`status = $${n++}`); vals.push(body.status); }
+				if (body.notes !== undefined) { sets.push(`notes = $${n++}`); vals.push(body.notes); }
+				if (body.tags !== undefined) { 
+					sets.push(`tags = $${n++}`); 
+					vals.push(typeof body.tags === 'string' ? body.tags : JSON.stringify(body.tags)); 
+				}
+				if (body.custom_fields !== undefined) { 
+					sets.push(`custom_fields = $${n++}`); 
+					vals.push(typeof body.custom_fields === 'string' ? body.custom_fields : JSON.stringify(body.custom_fields)); 
+				}
+				if (body.is_bot_enabled !== undefined) { 
+					sets.push(`is_bot_enabled = $${n++}`); 
+					vals.push(!!body.is_bot_enabled); 
+				}
+				if (sets.length) {
+					sets.push('updated_at = NOW()');
+					vals.push(id);
+					await db(`UPDATE conversations SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+				}
+				return json({ ok: true });
+			} else {
+				return json({ error: 'Method not allowed' }, { status: 405 });
+			}
+		}
+
+		const osMatch = route.match(/^order-statuses\/(\d+)$/);
+		if (osMatch && method === 'PUT') {
+			const id = parseInt(osMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			if (body.statusKey !== undefined) { sets.push(`status_key = $${n++}`); vals.push(body.statusKey); }
+			if (body.status_key !== undefined) { sets.push(`status_key = $${n++}`); vals.push(body.status_key); }
+			if (body.statusLabel !== undefined) { sets.push(`status_label = $${n++}`); vals.push(body.statusLabel); }
+			if (body.status_label !== undefined) { sets.push(`status_label = $${n++}`); vals.push(body.status_label); }
+			if (body.color !== undefined) { sets.push(`color = $${n++}`); vals.push(body.color); }
+			if (body.sortOrder !== undefined) { sets.push(`sort_order = $${n++}`); vals.push(Number(body.sortOrder)); }
+			if (body.sort_order !== undefined) { sets.push(`sort_order = $${n++}`); vals.push(Number(body.sort_order)); }
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE tenant_order_statuses SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
+		const fcMatch = route.match(/^finance-categories\/(\d+)$/);
+		if (fcMatch && method === 'PUT') {
+			const id = parseInt(fcMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			if (body.categoryKey !== undefined) { sets.push(`category_key = $${n++}`); vals.push(body.categoryKey); }
+			if (body.category_key !== undefined) { sets.push(`category_key = $${n++}`); vals.push(body.category_key); }
+			if (body.categoryLabel !== undefined) { sets.push(`category_label = $${n++}`); vals.push(body.categoryLabel); }
+			if (body.category_label !== undefined) { sets.push(`category_label = $${n++}`); vals.push(body.category_label); }
+			if (body.type !== undefined) { sets.push(`type = $${n++}`); vals.push(body.type); }
+			if (body.color !== undefined) { sets.push(`color = $${n++}`); vals.push(body.color); }
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE tenant_finance_categories SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
+		const reMatch = route.match(/^receipt-extractions\/(\d+)$/);
+		if (reMatch && method === 'PUT') {
+			const id = parseInt(reMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			if (body.status !== undefined) { sets.push(`status = $${n++}`); vals.push(body.status); }
+			if (body.orderId !== undefined) { sets.push(`order_id = $${n++}`); vals.push(body.orderId ? Number(body.orderId) : null); }
+			if (body.order_id !== undefined) { sets.push(`order_id = $${n++}`); vals.push(body.order_id ? Number(body.order_id) : null); }
+			if (body.extractedData !== undefined) { 
+				sets.push(`extracted_data = $${n++}`); 
+				vals.push(typeof body.extractedData === 'string' ? body.extractedData : JSON.stringify(body.extractedData)); 
+			}
+			if (body.extracted_data !== undefined) { 
+				sets.push(`extracted_data = $${n++}`); 
+				vals.push(typeof body.extracted_data === 'string' ? body.extracted_data : JSON.stringify(body.extracted_data)); 
+			}
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE receipt_extractions SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
 		}
 
 		// PUT routes - FIX: Use parameterized queries
@@ -451,6 +565,55 @@ export async function handleAdmin(path: string, method: string, request: Request
 			if (sets.length) {
 				vals.push(id);
 				await db(`UPDATE tenant_tags SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
+		const finMatch = route.match(/^finance\/(\d+)$/);
+		if (finMatch && method === 'PUT') {
+			const id = parseInt(finMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			if (body.date !== undefined) { sets.push(`date = $${n++}`); vals.push(body.date); }
+			if (body.description !== undefined) { sets.push(`description = $${n++}`); vals.push(body.description); }
+			if (body.category !== undefined) { sets.push(`category = $${n++}`); vals.push(body.category); }
+			if (body.amount !== undefined) {
+				const amount = Number(body.amount);
+				if (isNaN(amount) || amount < 0) {
+					return json({ error: 'Invalid amount' }, { status: 400 });
+				}
+				sets.push(`amount = $${n++}`);
+				vals.push(amount);
+			}
+			if (body.type !== undefined) {
+				if (body.type !== 'income' && body.type !== 'expense') {
+					return json({ error: 'Invalid type' }, { status: 400 });
+				}
+				sets.push(`type = $${n++}`);
+				vals.push(body.type);
+			}
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE ledger_entries SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
+			}
+			return json({ ok: true });
+		}
+
+		const medMatch = route.match(/^media\/(\d+)$/);
+		if (medMatch && method === 'PUT') {
+			const id = parseInt(medMatch[1]);
+			if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
+			const sets: string[] = [];
+			const vals: unknown[] = [];
+			let n = 1;
+			if (body.category !== undefined) { sets.push(`category = $${n++}`); vals.push(body.category); }
+			if (body.filename !== undefined) { sets.push(`filename = $${n++}`); vals.push(body.filename); }
+			if (body.url !== undefined) { sets.push(`url = $${n++}`); vals.push(body.url); }
+			if (sets.length) {
+				vals.push(id);
+				await db(`UPDATE media_assets SET ${sets.join(', ')} WHERE tenant_id = 1 AND id = $${n}`, vals);
 			}
 			return json({ ok: true });
 		}

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api, timeAgo, fmtPeso, fmtNum } from '$lib/api';
 	import { showToast } from '$lib/stores';
+	import { pendingOrdersCount, unreadChatsCount } from '$lib/stores';
 	import type { Conversation, Order, LedgerEntry } from '$lib/types';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import MetricCard from '$lib/components/MetricCard.svelte';
@@ -54,7 +55,9 @@
 			allEntries = finance;
 
 			const now = Date.now();
-			const rangeMs = dateRange === 'today' ? 86400000 : dateRange === '7d' ? 604800000 : dateRange === '30d' ? 2592000000 : 7776000000;
+			const rangeMs = dateRange === 'today'
+				? Date.now() - new Date().setHours(0,0,0,0) // calendar day midnight
+				: dateRange === '7d' ? 604800000 : dateRange === '30d' ? 2592000000 : 7776000000;
 			const rangeStart = new Date(now - rangeMs);
 			const prevStart = new Date(now - rangeMs * 2);
 
@@ -88,6 +91,9 @@
 				revenueChange,
 			};
 
+			// Update sidebar badge stores
+			pendingOrdersCount.set(newOrders + confirmedOrders);
+			unreadChatsCount.set(conversations.filter(c => new Date(c.last_activity_at || c.updated_at).getTime() > now - 86400000).length);
 			// Revenue by day
 			const dayCount = dateRange === 'today' ? 1 : dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
 			const days = [];

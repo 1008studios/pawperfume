@@ -6,6 +6,7 @@
 	import { sidebarCollapsed, theme, toasts } from '$lib/stores';
 	import { clearToken, getTokenValue } from '$lib/api';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
+	import MobileBottomNav from '$lib/components/MobileBottomNav.svelte';
 
 	let { children } = $props();
 
@@ -176,6 +177,7 @@
 		<main class="main-content">
 			{@render children()}
 		</main>
+		<MobileBottomNav unreadCount={unreadChats} />
 	</div>
 
 	<div class="toast-container">
@@ -305,6 +307,6 @@
 		.sidebar.mobile-open { transform: translateX(0); }
 		.sidebar.collapsed { width: 260px; transform: translateX(-100%); }
 		.sidebar.collapsed.mobile-open { transform: translateX(0); }
-		.main-content { padding-top: 60px; }
+		.main-content { padding-top: 60px; padding-bottom: 80px; }
 	}
 </style>

@@ -3,6 +3,7 @@
 	import { api, showToast } from '$lib/api';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { QuickReply } from '$lib/types';
+	import InlineEdit from '$lib/components/InlineEdit.svelte';
 
 	let quickReplies = $state<QuickReply[]>([]);
 	let loading = $state(true);
@@ -76,6 +77,17 @@
 		}
 	}
 
+	async function updateReplyField(id: number, fields: Partial<QuickReply>) {
+		try {
+			await api.updateQuickReply(id, fields);
+			showToast('Quick reply updated.', 'success');
+			await loadQuickReplies();
+		} catch {
+			showToast('Failed to update quick reply.', 'error');
+			throw new Error('Save failed');
+		}
+	}
+
 	function copyMessage(message: string) {
 		navigator.clipboard.writeText(message);
 		showToast('Copied to clipboard.', 'success');
@@ -107,16 +119,26 @@
 		<div class="card-list">
 			{#each quickReplies as reply}
 				<div 
-					class="card clickable-card" 
-					onclick={() => editReply(reply)}
-					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editReply(reply); } }}
-					tabindex="0"
-					role="button"
-					aria-label="Edit quick reply: {reply.label}"
+					class="card"
 				>
-					<div class="card-content">
-						<div class="card-label"> {reply.label || '—'}</div>
-						<div class="card-message">{reply.message || '—'}</div>
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div class="card-content" onclick={(e) => e.stopPropagation()}>
+						<div class="card-label">
+							<InlineEdit
+								bind:value={reply.label}
+								onSave={(val) => updateReplyField(reply.id, { label: val })}
+								placeholder="Label..."
+							/>
+						</div>
+						<div class="card-message">
+							<InlineEdit
+								bind:value={reply.message}
+								type="textarea"
+								onSave={(val) => updateReplyField(reply.id, { message: val })}
+								placeholder="Message content..."
+							/>
+						</div>
 					</div>
 					<div class="card-actions">
 						<button class="btn btn-ghost btn-sm" onclick={(e) => { e.stopPropagation(); copyMessage(reply.message || ''); }} aria-label="Copy quick reply message">Copy</button>

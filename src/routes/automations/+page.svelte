@@ -3,6 +3,7 @@
 	import { api, showToast } from '$lib/api';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { Automation } from '$lib/types';
+	import InlineEdit from '$lib/components/InlineEdit.svelte';
 
 	let automations = $state<Automation[]>([]);
 	let loading = $state(true);
@@ -75,6 +76,17 @@
 			deletingId = null;
 		}
 	}
+
+	async function updateAutomationField(id: number, fields: Partial<Automation>) {
+		try {
+			await api.updateAutomation(id, fields);
+			showToast('Automation updated.', 'success');
+			await loadAutomations();
+		} catch {
+			showToast('Failed to update automation.', 'error');
+			throw new Error('Save failed');
+		}
+	}
 </script>
 
 <ConfirmDialog
@@ -102,18 +114,34 @@
 		<div class="card-list">
 			{#each automations as auto}
 				<div 
-					class="card clickable-card" 
-					onclick={() => editAutomation(auto)}
-					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editAutomation(auto); } }}
-					tabindex="0"
-					role="button"
-					aria-label="Edit automation: {auto.name}"
+					class="card"
 				>
-					<div class="card-content">
-						<div class="card-label">{auto.name || 'Unnamed'}</div>
-						<div class="card-trigger">
-							<span class="trigger-type">{auto.trigger_type || 'keyword'}</span>
-							<span class="trigger-value">"{auto.trigger_value || '—'}"</span>
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div class="card-content" onclick={(e) => e.stopPropagation()}>
+						<div class="card-label">
+							<InlineEdit
+								bind:value={auto.name}
+								onSave={(val) => updateAutomationField(auto.id, { name: val })}
+								placeholder="Automation Name..."
+							/>
+						</div>
+						<div class="card-trigger" style="display:flex; gap: 8px; align-items: baseline; margin-top: 8px;">
+							<div style="width: 100px;">
+								<InlineEdit
+									bind:value={auto.trigger_type}
+									type="select"
+									options={['keyword', 'postback']}
+									onSave={(val) => updateAutomationField(auto.id, { trigger_type: val })}
+								/>
+							</div>
+							<div style="flex: 1;">
+								<InlineEdit
+									bind:value={auto.trigger_value}
+									onSave={(val) => updateAutomationField(auto.id, { trigger_value: val })}
+									placeholder="Trigger value..."
+								/>
+							</div>
 						</div>
 					</div>
 					<div class="card-actions" style="display: flex; gap: 8px; align-items: center;">

@@ -3,6 +3,7 @@
 	import { api, fmtPeso, showToast, downloadCSV } from '$lib/api';
 	import type { Order, CustomField, OrderStatus, ColumnConfig } from '$lib/types';
 	import Skeleton from '$lib/components/Skeleton.svelte';
+	import InlineEdit from '$lib/components/InlineEdit.svelte';
 	import { createDebouncedStore } from '$lib/debounce';
 
 	let orders = $state<Order[]>([]);
@@ -289,6 +290,18 @@
 		activeTab = 'all';
 	}
 
+	async function togglePaymentStatus(order: Order) {
+		const newStatus = order.payment_status === 'paid' ? 'pending' : 'paid';
+		try {
+			await api.updateOrder(order.id, { payment_status: newStatus });
+			order.payment_status = newStatus;
+			showToast(`Order #${order.id} payment updated to ${newStatus}.`, 'success');
+			await loadOrders(true);
+		} catch {
+			showToast('Could not update payment status.', 'error');
+		}
+	}
+
 	let hasActiveFilters = $derived(searchQuery || paymentFilter !== 'all' || dateFrom || dateTo);
 </script>
 
@@ -436,11 +449,68 @@
 											{/each}
 										</select>
 									{:else if col.column_key === 'payment_status'}
-										<span class="badge" class:badge-paid={order.payment_status === 'paid'} class:badge-pending={order.payment_status !== 'paid'}>{order.payment_status || 'pending'}</span>
+										<!-- svelte-ignore a11y_click_events_have_key_events -->
+										<!-- svelte-ignore a11y_no_static_element_interactions -->
+										<span class="badge cursor-pointer" class:badge-paid={order.payment_status === 'paid'} class:badge-pending={order.payment_status !== 'paid'} onclick={() => togglePaymentStatus(order)} title="Click to toggle status">{order.payment_status || 'pending'}</span>
 									{:else if col.column_key === 'id'}
 										<span class="order-id">#{order.id}</span>
 									{:else if col.column_key === 'customer_name'}
-										<span class="cell-editable" onclick={() => editOrder(order)}>{order.customer_name || '—'}</span>
+										<InlineEdit
+											bind:value={order.customer_name}
+											onSave={(val) => api.updateOrder(order.id, { customer_name: val })}
+											placeholder="Enter name..."
+										/>
+									{:else if col.column_key === 'amount'}
+										<InlineEdit
+											bind:value={order.amount}
+											type="number"
+											currency={true}
+											onSave={(val) => api.updateOrder(order.id, { amount: val })}
+											placeholder="0.00"
+										/>
+									{:else if col.column_key === 'notes'}
+										<InlineEdit
+											bind:value={order.notes}
+											type="textarea"
+											onSave={(val) => api.updateOrder(order.id, { notes: val })}
+											placeholder="Add notes..."
+										/>
+									{:else if col.column_key.startsWith('cf_')}
+										{@const cfKey = col.column_key.replace('cf_', '')}
+										{@const cfConfig = customFields.find(f => f.field_key === cfKey)}
+										{#if cfConfig}
+											{#if cfConfig.field_type === 'select'}
+												{@const optList = typeof cfConfig.field_options === 'string' ? JSON.parse(cfConfig.field_options) : cfConfig.field_options || []}
+												<InlineEdit
+													value={(() => {
+														const cf = typeof order.custom_fields === 'string' ? JSON.parse(order.custom_fields || '{}') : order.custom_fields || {};
+														return cf[cfKey] || '';
+													})()}
+													type="select"
+													options={['', ...optList]}
+													onSave={(val) => {
+														const cf = typeof order.custom_fields === 'string' ? JSON.parse(order.custom_fields || '{}') : order.custom_fields || {};
+														cf[cfKey] = val;
+														return api.updateOrder(order.id, { custom_fields: cf });
+													}}
+													placeholder="—"
+												/>
+											{:else}
+												<InlineEdit
+													value={(() => {
+														const cf = typeof order.custom_fields === 'string' ? JSON.parse(order.custom_fields || '{}') : order.custom_fields || {};
+														return cf[cfKey] || '';
+													})()}
+													type="text"
+													onSave={(val) => {
+														const cf = typeof order.custom_fields === 'string' ? JSON.parse(order.custom_fields || '{}') : order.custom_fields || {};
+														cf[cfKey] = val;
+														return api.updateOrder(order.id, { custom_fields: cf });
+													}}
+													placeholder="—"
+												/>
+											{/if}
+										{/if}
 									{:else}
 										<span>{getCellValue(order, col)}</span>
 									{/if}

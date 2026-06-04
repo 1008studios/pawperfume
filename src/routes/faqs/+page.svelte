@@ -3,6 +3,7 @@
 	import { api, showToast } from '$lib/api';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { Faq } from '$lib/types';
+	import InlineEdit from '$lib/components/InlineEdit.svelte';
 
 	let faqs = $state<Faq[]>([]);
 	let loading = $state(true);
@@ -75,6 +76,17 @@
 			deletingId = null;
 		}
 	}
+
+	async function updateFaqField(id: number, fields: Partial<Faq>) {
+		try {
+			await api.updateFaq(id, fields);
+			showToast('FAQ updated.', 'success');
+			await loadFaqs();
+		} catch {
+			showToast('Failed to update FAQ.', 'error');
+			throw new Error('Save failed');
+		}
+	}
 </script>
 
 <ConfirmDialog
@@ -102,23 +114,42 @@
 		<div class="card-list">
 			{#each faqs as faq}
 				<div 
-					class="card clickable-card" 
-					onclick={() => editFaq(faq)}
-					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editFaq(faq); } }}
-					tabindex="0"
-					role="button"
-					aria-label="Edit FAQ: {faq.question}"
+					class="card"
 				>
-					<div class="card-content">
-						<div class="card-question">Q: {faq.question || '—'}</div>
-						<div class="card-answer">A: {faq.answer || '—'}</div>
-						{#if faq.keywords}
-							<div class="card-keywords">
-								{#each faq.keywords.split(',').map(k => k.trim()).filter(Boolean) as kw}
-									<span class="keyword-tag">{kw}</span>
-								{/each}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div class="card-content" onclick={(e) => e.stopPropagation()}>
+						<div class="card-question" style="display:flex; gap: 4px; align-items: baseline;">
+							<span style="font-weight:600; color:var(--accent);">Q:</span>
+							<div style="flex:1;">
+								<InlineEdit
+									bind:value={faq.question}
+									onSave={(val) => updateFaqField(faq.id, { question: val })}
+									placeholder="Question..."
+								/>
 							</div>
-						{/if}
+						</div>
+						<div class="card-answer" style="display:flex; gap: 4px; align-items: baseline; margin-top:8px;">
+							<span style="font-weight:600; color:var(--text-secondary);">A:</span>
+							<div style="flex:1;">
+								<InlineEdit
+									bind:value={faq.answer}
+									type="textarea"
+									onSave={(val) => updateFaqField(faq.id, { answer: val })}
+									placeholder="Answer..."
+								/>
+							</div>
+						</div>
+						<div class="card-keywords" style="display:flex; gap: 4px; align-items: baseline; margin-top:8px; font-size:12px;">
+							<span style="color:var(--text-tertiary); font-weight:500;">Keywords:</span>
+							<div style="flex:1;">
+								<InlineEdit
+									bind:value={faq.keywords}
+									onSave={(val) => updateFaqField(faq.id, { keywords: val })}
+									placeholder="Keywords (comma separated)..."
+								/>
+							</div>
+						</div>
 					</div>
 					<div class="card-actions">
 						<button class="btn-icon" onclick={(e) => { e.stopPropagation(); editFaq(faq); }} title="Edit" aria-label="Edit FAQ">

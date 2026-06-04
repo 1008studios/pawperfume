@@ -3,6 +3,7 @@
 	import { api, showToast } from '$lib/api';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { Tag } from '$lib/types';
+	import InlineEdit from '$lib/components/InlineEdit.svelte';
 
 	let tags = $state<Tag[]>([]);
 	let loading = $state(true);
@@ -75,6 +76,17 @@
 			deletingId = null;
 		}
 	}
+
+	async function updateTagField(id: number, fields: Partial<Tag>) {
+		try {
+			await api.updateTag(id, fields);
+			showToast('Tag updated.', 'success');
+			await loadTags();
+		} catch {
+			showToast('Failed to update tag.', 'error');
+			throw new Error('Save failed');
+		}
+	}
 </script>
 
 <ConfirmDialog
@@ -102,16 +114,22 @@
 		<div class="tags-grid">
 			{#each tags as tag}
 				<div 
-					class="tag-card clickable-card" 
+					class="tag-card" 
 					style="border-color: {tag.color}40"
-					onclick={() => editTag(tag)}
-					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editTag(tag); } }}
-					tabindex="0"
-					role="button"
-					aria-label="Edit tag: {tag.tag_label || tag.tag_key}"
 				>
-					<div class="tag-preview" style="background: {tag.color}20; color: {tag.color}">
-						 {tag.tag_label || tag.tag_key}
+					<input 
+						type="color" 
+						value={tag.color} 
+						onchange={(e) => updateTagField(tag.id, { color: (e.target as HTMLInputElement).value })} 
+						style="width:24px; height:24px; border:none; padding:0; background:none; border-radius:50%; cursor:pointer; flex-shrink:0;" 
+						title="Change color"
+					/>
+					<div class="tag-preview" style="background: {tag.color}20; color: {tag.color}; flex:1; min-width:120px;">
+						<InlineEdit
+							bind:value={tag.tag_label}
+							onSave={(val) => updateTagField(tag.id, { tag_label: val })}
+							placeholder={tag.tag_key}
+						/>
 					</div>
 					<div class="tag-actions" style="display: flex; gap: 4px; margin-left: 8px;">
 						<button class="btn-icon" onclick={(e) => { e.stopPropagation(); editTag(tag); }} title="Edit" aria-label="Edit tag" style="color: var(--text-secondary);">

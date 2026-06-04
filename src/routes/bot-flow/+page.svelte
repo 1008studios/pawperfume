@@ -3,6 +3,7 @@
 	import { api, showToast } from '$lib/api';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { BotFlowStep } from '$lib/types';
+	import InlineEdit from '$lib/components/InlineEdit.svelte';
 
 	let steps = $state<BotFlowStep[]>([]);
 	let loading = $state(true);
@@ -15,6 +16,67 @@
 	let testInput = $state('');
 	let testLog = $state<Array<{ type: 'bot' | 'user' | 'system'; text: string; imageUrl?: string; carousel?: CarouselItem[] }>>([]);
 	let testVariables = $state<Record<string, string>>({});
+
+	let draggedStepId = $state<number | null>(null);
+	let dragOverStepId = $state<number | null>(null);
+
+	function handleDragStart(e: DragEvent, id: number) {
+		draggedStepId = id;
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', String(id));
+		}
+	}
+
+	function handleDragOver(e: DragEvent, id: number) {
+		e.preventDefault();
+		dragOverStepId = id;
+	}
+
+	async function handleStepDrop(e: DragEvent, targetId: number) {
+		e.preventDefault();
+		if (draggedStepId === null || draggedStepId === targetId) return;
+
+		const draggedIdx = sortedSteps.findIndex(s => s.id === draggedStepId);
+		const targetIdx = sortedSteps.findIndex(s => s.id === targetId);
+		if (draggedIdx === -1 || targetIdx === -1) return;
+
+		const newSteps = [...sortedSteps];
+		const [draggedItem] = newSteps.splice(draggedIdx, 1);
+		newSteps.splice(targetIdx, 0, draggedItem);
+
+		const updates = newSteps.map((step, index) => {
+			step.sort_order = index;
+			return api.generic(`/bot-flow/${step.id}`, 'PUT', { sort_order: index });
+		});
+
+		try {
+			await Promise.all(updates);
+			showToast('Reordered bot flow.', 'success');
+			await loadSteps();
+		} catch {
+			showToast('Failed to save order.', 'error');
+		} finally {
+			draggedStepId = null;
+			dragOverStepId = null;
+		}
+	}
+
+	function handleDragEnd() {
+		draggedStepId = null;
+		dragOverStepId = null;
+	}
+
+	async function updateStepField(id: number, fields: Partial<BotFlowStep>) {
+		try {
+			await api.generic(`/bot-flow/${id}`, 'PUT', fields);
+			showToast('Step updated.', 'success');
+			await loadSteps();
+		} catch {
+			showToast('Failed to update step.', 'error');
+			throw new Error('Save failed');
+		}
+	}
 
 	// Image / carousel upload state
 	let uploadingImage = $state(false);
@@ -430,6 +492,7 @@
 	{:else}
 		<div class="flow-visualizer">
 			{#each sortedSteps as step, i}
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div 
 					class="flow-step clickable-card" 
 					class:step-auto={step.step_type === 'auto'} 
@@ -437,6 +500,13 @@
 					class:step-text={step.step_type === 'text_input'}
 					class:step-image={step.step_type === 'image'}
 					class:step-carousel={step.step_type === 'carousel'}
+					class:drag-over={dragOverStepId === step.id}
+					class:dragging={draggedStepId === step.id}
+					draggable="true"
+					ondragstart={(e) => handleDragStart(e, step.id)}
+					ondragover={(e) => handleDragOver(e, step.id)}
+					ondragend={handleDragEnd}
+					ondrop={(e) => handleStepDrop(e, step.id)}
 					onclick={() => editStep(step)}
 					onkeydown={(e) => handleCardKeyDown(e, step)}
 					tabindex="0"
@@ -451,10 +521,18 @@
 							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
 						</button>
 					</div>
-					<div class="step-number">{i + 1}</div>
+					<div class="step-number" style="cursor: grab;">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--text-tertiary);"><path d="M5 9h14M5 15h14"/></svg>
+					</div>
 					<div class="step-content">
 						<div class="step-header">
-							<span class="step-label">{step.step_label || step.step_key}</span>
+							<span class="step-label" onclick={(e) => e.stopPropagation()}>
+								<InlineEdit
+									bind:value={step.step_label}
+									onSave={(val) => updateStepField(step.id, { step_label: val })}
+									placeholder={step.step_key}
+								/>
+							</span>
 							<div class="step-badges">
 								<span class="step-type-badge badge-{step.step_type}">{getStepTypeLabel(step.step_type)}</span>
 								{#if step.input_variable}
@@ -462,11 +540,16 @@
 								{/if}
 							</div>
 						</div>
-						{#if step.prompt_message}
-							<div class="step-preview">
-								<div class="preview-bubble bot">{step.prompt_message}</div>
+						<div class="step-preview" onclick={(e) => e.stopPropagation()}>
+							<div class="preview-bubble bot" style="width: 100%;">
+								<InlineEdit
+									bind:value={step.prompt_message}
+									type="textarea"
+									onSave={(val) => updateStepField(step.id, { prompt_message: val })}
+									placeholder="Add bot prompt message..."
+								/>
 							</div>
-						{/if}
+						</div>
 						{#if step.step_type === 'image'}
 							{#if step.image_url}
 								<div class="step-image-preview">
@@ -780,6 +863,15 @@
 		border-radius: 10px; padding: 16px 20px; display: flex; gap: 12px;
 		align-items: flex-start; cursor: pointer;
 		transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease;
+	}
+	.flow-step.dragging {
+		opacity: 0.4;
+		border: 2px dashed var(--accent);
+	}
+	.flow-step.drag-over {
+		border-color: var(--accent);
+		background: var(--accent-bg);
+		transform: scale(1.01);
 	}
 	.flow-step:hover {
 		transform: translateY(-2px);

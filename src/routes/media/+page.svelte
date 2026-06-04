@@ -3,6 +3,7 @@
 	import { api, showToast } from '$lib/api';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { MediaAsset } from '$lib/types';
+	import InlineEdit from '$lib/components/InlineEdit.svelte';
 
 	let media = $state<MediaAsset[]>([]);
 	let loading = $state(true);
@@ -10,6 +11,72 @@
 	let showDeleteConfirm = $state(false);
 	let deletingId = $state<number | null>(null);
 	let newMedia = $state({ url: '', filename: '', category: 'general' });
+
+	let dragActive = $state(false);
+	let isUploading = $state(false);
+	let uploadProgress = $state(0);
+
+	function handleDrag(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		if (e.type === 'dragenter' || e.type === 'dragover') {
+			dragActive = true;
+		} else if (e.type === 'dragleave') {
+			dragActive = false;
+		}
+	}
+
+	async function handleDrop(e: DragEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		dragActive = false;
+		if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
+			await uploadFile(e.dataTransfer.files[0]);
+		}
+	}
+
+	async function handleFileSelect(e: Event) {
+		const target = e.target as HTMLInputElement;
+		if (target.files && target.files[0]) {
+			await uploadFile(target.files[0]);
+		}
+	}
+
+	async function uploadFile(file: File) {
+		isUploading = true;
+		uploadProgress = 10;
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			const token = localStorage.getItem('pp_token') || '';
+			const res = await fetch('/api/admin/upload-blob', {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${token}`
+				},
+				body: formData
+			});
+			if (!res.ok) {
+				const errText = await res.text();
+				throw new Error(errText || 'Upload failed');
+			}
+			const data = await res.json() as { url: string };
+			uploadProgress = 70;
+			await api.createMedia({
+				url: data.url,
+				filename: file.name,
+				category: 'general'
+			});
+			uploadProgress = 100;
+			showToast('File uploaded successfully.', 'success');
+			await loadMedia();
+		} catch (err: any) {
+			showToast(err.message || 'Upload failed.', 'error');
+		} finally {
+			isUploading = false;
+			uploadProgress = 0;
+		}
+	}
 
 	onMount(async () => {
 		await loadMedia();
@@ -56,6 +123,17 @@
 			deletingId = null;
 		}
 	}
+
+	async function updateMediaField(id: number, fields: Partial<MediaAsset>) {
+		try {
+			await api.updateMedia(id, fields);
+			showToast('Media updated.', 'success');
+			await loadMedia();
+		} catch {
+			showToast('Failed to update media.', 'error');
+			throw new Error('Save failed');
+		}
+	}
 </script>
 
 <ConfirmDialog
@@ -77,6 +155,38 @@
 		<button class="btn btn-primary" onclick={() => showForm = true}>+ Add Media</button>
 	</header>
 
+	<!-- Drag and drop zone -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div 
+		class="dropzone" 
+		class:drag-active={dragActive}
+		ondragenter={handleDrag}
+		ondragleave={handleDrag}
+		ondragover={handleDrag}
+		ondrop={handleDrop}
+	>
+		{#if isUploading}
+			<div class="upload-progress-container">
+				<div class="spinner"></div>
+				<p>Uploading... {uploadProgress}%</p>
+				<div class="progress-bar-bg">
+					<div class="progress-bar-fill" style="width: {uploadProgress}%"></div>
+				</div>
+			</div>
+		{:else}
+			<div class="dropzone-prompt">
+				<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+					<polyline points="17 8 12 3 7 8"></polyline>
+					<line x1="12" y1="3" x2="12" y2="15"></line>
+				</svg>
+				<p>Drag and drop your images here, or <label class="file-label">browse<input type="file" accept="image/*" onchange={handleFileSelect} style="display:none;" /></label></p>
+				<span class="dropzone-sub">Supports JPG, PNG, GIF up to 5MB</span>
+			</div>
+		{/if}
+	</div>
+
 	{#if loading}
 		<div class="loading-state">Loading...</div>
 	{:else}
@@ -89,10 +199,24 @@
 						<div class="media-placeholder">No preview</div>
 					{/if}
 					<div class="media-info">
-						<div class="media-filename">{item.filename || 'Untitled'}</div>
-						<div class="media-category">{item.category || 'general'}</div>
+						<div class="media-filename">
+							<InlineEdit
+								bind:value={item.filename}
+								onSave={(val) => updateMediaField(item.id, { filename: val })}
+								placeholder="Filename..."
+							/>
+						</div>
+						<div class="media-category">
+							<InlineEdit
+								bind:value={item.category}
+								onSave={(val) => updateMediaField(item.id, { category: val })}
+								placeholder="Category..."
+							/>
+						</div>
 					</div>
-					<button class="media-delete" onclick={() => promptDelete(item.id)}></button>
+					<button class="media-delete" onclick={() => promptDelete(item.id)} aria-label="Delete media">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+					</button>
 				</div>
 			{:else}
 				<div class="empty-state">
@@ -137,6 +261,77 @@
 
 <style>
 	.page { padding: 32px; max-width: 1200px; margin: 0 auto; }
+	.dropzone {
+		border: 2px dashed var(--border);
+		border-radius: 8px;
+		padding: 32px;
+		text-align: center;
+		background: var(--surface);
+		margin-bottom: 24px;
+		transition: all 0.2s ease;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 140px;
+	}
+	.dropzone.drag-active {
+		border-color: var(--accent);
+		background: var(--accent-bg);
+	}
+	.dropzone-prompt {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+		color: var(--text-secondary);
+	}
+	.dropzone-prompt p {
+		margin: 0;
+		font-size: 14px;
+	}
+	.file-label {
+		color: var(--accent);
+		font-weight: 500;
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	.dropzone-sub {
+		font-size: 11px;
+		color: var(--text-tertiary);
+	}
+	.upload-progress-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		max-width: 300px;
+	}
+	.progress-bar-bg {
+		width: 100%;
+		height: 6px;
+		background: var(--border);
+		border-radius: 3px;
+		overflow: hidden;
+	}
+	.progress-bar-fill {
+		height: 100%;
+		background: var(--accent);
+		border-radius: 3px;
+		transition: width 0.1s ease;
+	}
+	.spinner {
+		width: 24px;
+		height: 24px;
+		border: 2.5px solid var(--border);
+		border-top-color: var(--accent);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
 	.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 	.breadcrumb { display: flex; align-items: center; gap: 8px; }
 	.breadcrumb-icon { font-size: 20px; }
