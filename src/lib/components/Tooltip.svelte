@@ -8,8 +8,9 @@
 	let { 
 		content, 
 		position = 'top',
-		delay = 200
-	}: Props = $props();
+		delay = 200,
+		children
+	}: Props & { children?: import('svelte').Snippet } = $props();
 
 	let visible = $state(false);
 	let timeout: ReturnType<typeof setTimeout>;
@@ -32,8 +33,11 @@
 	onmouseleave={hide}
 	onfocus={show}
 	onblur={hide}
+	role="presentation"
 >
-	<slot />
+	{#if children}
+		{@render children()}
+	{/if}
 	
 	{#if visible}
 		<div class="tooltip tooltip-{position}" role="tooltip">

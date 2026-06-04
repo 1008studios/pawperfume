@@ -80,6 +80,12 @@
 		onClose();
 	}
 
+	function handleOverlayClick(e: MouseEvent) {
+		if (e.target === e.currentTarget) {
+			close();
+		}
+	}
+
 	// Auto-extract when modal opens
 	$effect(() => {
 		if (open && messageText) {
@@ -89,8 +95,8 @@
 </script>
 
 {#if open}
-	<div class="modal-overlay" onclick={close} role="presentation" onkeydown={(e) => e.key === 'Escape' && close()}>
-		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog" aria-labelledby="modal-title">
+	<div class="modal-overlay" onclick={handleOverlayClick} role="button" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && close()} aria-label="Close modal">
+		<div class="modal" role="dialog" aria-labelledby="modal-title" tabindex="-1">
 			<div class="modal-header">
 				<h2 id="modal-title">Create Order from Message</h2>
 				<button class="btn-icon" onclick={close} aria-label="Close dialog">

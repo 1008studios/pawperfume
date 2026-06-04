@@ -14,9 +14,11 @@
 	interface Props {
 		metrics: MetricCard[];
 		title?: string;
+		actions?: import('svelte').Snippet;
+		children?: import('svelte').Snippet;
 	}
 
-	let { metrics, title = 'Dashboard' }: Props = $props();
+	let { metrics, title = 'Dashboard', actions, children }: Props = $props();
 
 	const dispatch = createEventDispatcher();
 
@@ -48,7 +50,9 @@
 	<div class="dashboard-header">
 		<h1 class="dashboard-title">{title}</h1>
 		<div class="dashboard-actions">
-			<slot name="actions" />
+			{#if actions}
+				{@render actions()}
+			{/if}
 		</div>
 	</div>
 
@@ -80,7 +84,9 @@
 	</div>
 
 	<div class="dashboard-content">
-		<slot />
+		{#if children}
+			{@render children()}
+		{/if}
 	</div>
 </div>
 

@@ -61,14 +61,20 @@
 	function skip() {
 		complete();
 	}
+
+	function handleOverlayClick(e: MouseEvent) {
+		if (e.target === e.currentTarget) {
+			skip();
+		}
+	}
 </script>
 
 {#if open}
-	<div class="onboarding-overlay" onclick={skip} role="presentation">
-		<div class="onboarding-modal" onclick={(e) => e.stopPropagation()} role="dialog">
+	<div class="onboarding-overlay" onclick={handleOverlayClick} role="button" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && skip()} aria-label="Skip onboarding">
+		<div class="onboarding-modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="onboarding-title">
 			<div class="onboarding-content">
 				<div class="step-icon">{steps[currentStep].icon}</div>
-				<h2 class="step-title">{steps[currentStep].title}</h2>
+				<h2 id="onboarding-title" class="step-title">{steps[currentStep].title}</h2>
 				<p class="step-description">{steps[currentStep].description}</p>
 			</div>
 

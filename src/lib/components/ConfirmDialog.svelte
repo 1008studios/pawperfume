@@ -36,15 +36,21 @@
 			handleCancel();
 		}
 	}
+
+	function handleOverlayClick(e: MouseEvent) {
+		if (e.target === e.currentTarget) {
+			handleCancel();
+		}
+	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-	<div class="modal-backdrop" onclick={handleCancel}>
-		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+	<div class="modal-backdrop" onclick={handleOverlayClick} role="button" tabindex="-1" onkeydown={handleKeydown} aria-label="Close dialog">
+		<div class="modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="confirm-dialog-title">
 			<div class="modal-header">
-				<h2>{title}</h2>
+				<h2 id="confirm-dialog-title">{title}</h2>
 			</div>
 			<div class="modal-body">
 				<p>{message}</p>

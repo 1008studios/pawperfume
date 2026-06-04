@@ -72,18 +72,24 @@
 		const date = new Date(dateString);
 		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 	}
+
+	function handleOverlayClick(e: MouseEvent) {
+		if (e.target === e.currentTarget) {
+			dispatch('close');
+		}
+	}
 </script>
 
 {#if open}
-	<div class="modal-overlay" onclick={() => dispatch('close')} role="presentation">
-		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog">
+	<div class="modal-overlay" onclick={handleOverlayClick} role="button" tabindex="-1" onkeydown={(e) => e.key === 'Escape' && dispatch('close')} aria-label="Close user management">
+		<div class="modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="user-management-title">
 			<div class="modal-header">
-				<h2>User Management</h2>
+				<h2 id="user-management-title">User Management</h2>
 				<div class="header-actions">
 					<button class="btn btn-primary" onclick={startAddUser}>
 						+ Add User
 					</button>
-					<button class="btn-icon" onclick={() => dispatch('close')}></button>
+					<button class="btn-icon" onclick={() => dispatch('close')} aria-label="Close dialogue" title="Close">&times;</button>
 				</div>
 			</div>
 
@@ -130,8 +136,8 @@
 										<td class="last-login">{formatDate(user.lastLogin)}</td>
 										<td>
 											<div class="actions">
-												<button class="btn-icon" onclick={() => editUser(user)} title="Edit"></button>
-												<button class="btn-icon danger" onclick={() => deleteUser(user.id)} title="Delete"></button>
+												<button class="btn-icon" onclick={() => editUser(user)} title="Edit" aria-label="Edit user">✎</button>
+												<button class="btn-icon danger" onclick={() => deleteUser(user.id)} title="Delete" aria-label="Delete user">🗑</button>
 											</div>
 										</td>
 									</tr>
@@ -148,8 +154,9 @@
 				{:else}
 					<form class="user-form" onsubmit={(e) => { e.preventDefault(); saveUser(); }}>
 						<div class="form-group">
-							<label>Full Name *</label>
+							<label for="user-name">Full Name *</label>
 							<input 
+								id="user-name"
 								type="text" 
 								bind:value={editingUser.name}
 								placeholder="Juan Dela Cruz"
@@ -158,8 +165,9 @@
 						</div>
 
 						<div class="form-group">
-							<label>Email *</label>
+							<label for="user-email">Email *</label>
 							<input 
+								id="user-email"
 								type="email" 
 								bind:value={editingUser.email}
 								placeholder="juan@example.com"
@@ -168,8 +176,8 @@
 						</div>
 
 						<div class="form-group">
-							<label>Role *</label>
-							<select bind:value={editingUser.role} required>
+							<label for="user-role">Role *</label>
+							<select id="user-role" bind:value={editingUser.role} required>
 								<option value="agent">Agent</option>
 								<option value="manager">Manager</option>
 								<option value="admin">Admin</option>
@@ -180,8 +188,8 @@
 						</div>
 
 						<div class="form-group">
-							<label>Status</label>
-							<select bind:value={editingUser.status}>
+							<label for="user-status">Status</label>
+							<select id="user-status" bind:value={editingUser.status}>
 								<option value="active">Active</option>
 								<option value="inactive">Inactive</option>
 							</select>

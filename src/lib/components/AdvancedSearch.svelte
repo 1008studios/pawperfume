@@ -12,8 +12,9 @@
 		filters = $bindable({}),
 		results = [],
 		placeholder = 'Search...',
-		filterOptions = {}
-	}: Props = $props();
+		filterOptions = {},
+		children
+	}: Props & { children?: import('svelte').Snippet<[any[]]> } = $props();
 
 	let showFilters = $state(false);
 	let activeFilterCount = $derived(Object.keys(filters).filter(k => filters[k]).length);
@@ -83,8 +84,8 @@
 			<div class="filters-grid">
 				{#each Object.entries(filterOptions) as [key, config]}
 					<div class="filter-group">
-						<label class="filter-label">{config.label}</label>
-						<select bind:value={filters[key]} class="filter-select">
+						<label for="filter-select-{key}" class="filter-label">{config.label}</label>
+						<select id="filter-select-{key}" bind:value={filters[key]} class="filter-select">
 							<option value={null}>All</option>
 							{#each config.options as option}
 								<option value={option}>{option}</option>
@@ -118,7 +119,9 @@
 		<div class="results-count">
 			{results.length} result{results.length !== 1 ? 's' : ''} found
 		</div>
-		<slot {results} />
+		{#if children}
+			{@render children(results)}
+		{/if}
 	</div>
 </div>
 

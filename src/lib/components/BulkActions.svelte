@@ -45,8 +45,8 @@
 	<div class="bulk-actions-bar">
 		<div class="selection-info">
 			<span class="selection-count">{selectedItems.length} selected</span>
-			<button class="btn-icon" onclick={clearSelection}>
-				
+			<button class="btn-icon" onclick={clearSelection} aria-label="Clear selection" title="Clear selection">
+				&times;
 			</button>
 		</div>
 

@@ -8,8 +8,9 @@
 	let { 
 		open, 
 		title = 'Quick Actions',
-		position = 'bottom-right'
-	}: Props = $props();
+		position = 'bottom-right',
+		children
+	}: Props & { children?: import('svelte').Snippet } = $props();
 
 	let expanded = $state(false);
 
@@ -38,12 +39,14 @@
 
 <div class="fab-container" style={getPositionStyles()}>
 	{#if expanded && open}
-		<div class="fab-backdrop" onclick={toggle}></div>
+		<div class="fab-backdrop" onclick={toggle} role="button" tabindex="-1" onkeydown={(e) => (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') && toggle()} aria-label="Close menu"></div>
 	{/if}
 
 	{#if open}
 		<div class="fab-menu" class:expanded>
-			<slot />
+			{#if children}
+				{@render children()}
+			{/if}
 		</div>
 
 		<button 

@@ -27,11 +27,19 @@
 
 	const dispatch = createEventDispatcher();
 
-	let nodes = $state<AutomationNode[]>(initialNodes);
-	let connections = $state<AutomationConnection[]>(initialConnections);
+	let nodes = $state<AutomationNode[]>([]);
+	let connections = $state<AutomationConnection[]>([]);
 
 	let selectedNode = $state<AutomationNode | null>(null);
 	let configString = $state('');
+
+	$effect(() => {
+		if (open) {
+			nodes = [...initialNodes];
+			connections = [...initialConnections];
+			selectedNode = null;
+		}
+	});
 
 	$effect(() => {
 		if (selectedNode) {
@@ -154,6 +162,8 @@
 				onmousemove={handleCanvasMouseMove}
 				onmouseup={handleCanvasMouseUp}
 				onmouseleave={handleCanvasMouseUp}
+				role="region"
+				aria-label="Automation Canvas"
 			>
 				<svg class="connections-layer">
 					{#each connections as connection (connection.id)}
@@ -174,7 +184,11 @@
 								cy={(from.y + 40 + to.y + 40) / 2}
 								r="8"
 								fill="var(--danger)"
+								role="button"
+								tabindex="0"
+								aria-label="Delete connection"
 								onclick={() => deleteConnection(connection.id)}
+								onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && deleteConnection(connection.id)}
 								style="cursor: pointer;"
 							/>
 						{/if}
@@ -194,6 +208,10 @@
 						style="left: {node.x}px; top: {node.y}px; border-color: {config.color};"
 						onmousedown={(e) => handleNodeDragStart(e, node)}
 						onclick={() => selectedNode = node}
+						onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (selectedNode = node)}
+						role="button"
+						tabindex="0"
+						aria-label="Select node {node.label}"
 					>
 						<div class="node-header" style="background: {config.color}">
 							<span class="node-icon">{config.icon}</span>
@@ -201,6 +219,8 @@
 							<button 
 								class="node-delete"
 								onclick={(e) => { e.stopPropagation(); deleteNode(node.id); }}
+								aria-label="Delete node"
+								title="Delete node"
 							>
 								
 							</button>
@@ -212,10 +232,14 @@
 							<button 
 								class="port port-in"
 								onclick={(e) => { e.stopPropagation(); completeConnection(node.id); }}
+								aria-label="Input Connection Port"
+								title="Input Connection Port"
 							></button>
 							<button 
 								class="port port-out"
 								onclick={(e) => { e.stopPropagation(); startConnection(node.id); }}
+								aria-label="Output Connection Port"
+								title="Output Connection Port"
 							></button>
 						</div>
 					</div>
@@ -226,16 +250,18 @@
 				<div class="node-editor">
 					<h3>Edit Node</h3>
 					<div class="form-group">
-						<label>Label</label>
+						<label for="node-label-input">Label</label>
 						<input 
+							id="node-label-input"
 							type="text" 
 							bind:value={selectedNode.label}
 							oninput={() => nodes = [...nodes]}
 						/>
 					</div>
 					<div class="form-group">
-						<label>Configuration</label>
+						<label for="node-config-input">Configuration</label>
 						<textarea 
+							id="node-config-input"
 							bind:value={configString}
 							oninput={handleConfigInput}
 							rows="10"

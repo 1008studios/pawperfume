@@ -444,6 +444,35 @@ export async function extractReceiptData(imageUrl: string): Promise<Record<strin
 		return null;
 	}
 
+	let base64Data = '';
+	let mimeType = 'image/jpeg';
+
+	if (imageUrl.startsWith('data:')) {
+		const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+		if (match) {
+			mimeType = match[1];
+			base64Data = match[2];
+		} else {
+			console.error('Invalid data URL format');
+			return null;
+		}
+	} else {
+		try {
+			const imgResp = await fetch(imageUrl);
+			if (!imgResp.ok) {
+				console.error('Failed to fetch image from URL:', imageUrl);
+				return null;
+			}
+			const contentType = imgResp.headers.get('content-type');
+			if (contentType) mimeType = contentType;
+			const arrayBuffer = await imgResp.arrayBuffer();
+			base64Data = Buffer.from(arrayBuffer).toString('base64');
+		} catch (fetchErr) {
+			console.error('Failed to fetch image for Gemini Vision:', fetchErr);
+			return null;
+		}
+	}
+
 	try {
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout for vision
@@ -461,8 +490,8 @@ export async function extractReceiptData(imageUrl: string): Promise<Record<strin
 							},
 							{
 								inline_data: {
-									mime_type: 'image/jpeg',
-									data: imageUrl
+									mime_type: mimeType,
+									data: base64Data
 								}
 							}
 						]
