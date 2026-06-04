@@ -220,20 +220,10 @@
 		background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; gap: 16px; 
 		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
 	}
-	.card.clickable-card { cursor: pointer; }
-	.card.clickable-card:hover {
-		transform: translateY(-2px);
-		border-color: var(--accent);
-		box-shadow: var(--shadow-lg);
-	}
-	.card.clickable-card:active {
-		transform: translateY(0);
-	}
 	.card-content { flex: 1; }
 	.card-question { font-weight: 600; margin-bottom: 8px; }
 	.card-answer { color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5; }
 	.card-keywords { display: flex; flex-wrap: wrap; gap: 6px; }
-	.keyword-tag { background: var(--accent-bg); color: var(--accent); padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
 	.empty-state { text-align: center; padding: 64px; color: var(--text-secondary); }
 	.empty-icon { font-size: 48px; margin-bottom: 12px; }
 	.loading-state { text-align: center; padding: 64px; color: var(--text-secondary); }
@@ -242,7 +232,6 @@
 	.btn-primary:hover { background: var(--accent-hover); }
 	.btn-ghost { background: transparent; color: var(--text-secondary); }
 	.btn-ghost:hover { background: var(--surface-hover); }
-	.btn-sm { padding: 4px 12px; font-size: 13px; }
 	.btn-icon {
 		display: inline-flex; align-items: center; justify-content: center;
 		background: none; border: none; cursor: pointer; padding: 6px;

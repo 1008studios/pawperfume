@@ -81,7 +81,7 @@
 	// Image / carousel upload state
 	let uploadingImage = $state(false);
 	let imageDropActive = $state(false);
-	let imageFileInput: HTMLInputElement;
+	let imageFileInput = $state<HTMLInputElement>();
 
 	interface CarouselItem {
 		title: string;
@@ -739,7 +739,7 @@
 				<!-- Image Upload (for image & carousel steps) -->
 				{#if newStep.stepType === 'image'}
 					<div class="form-group">
-						<label>Step Image</label>
+						<label for="bf-image-file">Step Image</label>
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div
 							class="image-drop-zone"
@@ -759,7 +759,7 @@
 								<span class="image-drop-hint">Drag & drop or click to upload<br /><small>PNG (auto-converted to JPEG) or JPEG</small></span>
 							{/if}
 						</div>
-						<input type="file" accept="image/*" bind:this={imageFileInput} onchange={handleImageFileSelect} style="display:none" />
+						<input id="bf-image-file" type="file" accept="image/*" bind:this={imageFileInput} onchange={handleImageFileSelect} style="display:none" />
 						{#if newStep.imageUrl}
 							<div class="form-group" style="margin-top: 8px;">
 								<label for="bf-img-url">Image URL</label>

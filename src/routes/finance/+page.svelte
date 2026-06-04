@@ -420,11 +420,7 @@
 	.table td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
 	.table tr:last-child td { border-bottom: none; }
 	.table tr:hover td { background: var(--surface-hover); }
-	.badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; text-transform: capitalize; }
-	.badge-income { background: var(--green-bg); color: var(--green); }
-	.badge-expense { background: var(--red-bg); color: var(--red); }
 	.amount { font-weight: 600; }
-	.cat-tag { font-size: 11px; padding: 1px 8px; border-radius: 8px; background: var(--surface-hover); }
 	.empty-state { text-align: center; padding: 48px; color: var(--text-secondary); }
 	.empty-icon { font-size: 48px; margin-bottom: 12px; }
 

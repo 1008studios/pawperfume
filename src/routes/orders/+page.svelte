@@ -759,14 +759,11 @@
 	.status-select { padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; font-weight: 500; background: transparent; cursor: pointer; }
 	.status-select:focus { outline: none; }
 
-	.cell-editable { cursor: pointer; padding: 2px 6px; border-radius: var(--radius-sm); transition: background 0.15s; }
-	.cell-editable:hover { background: var(--surface-hover); }
-
 	.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; text-transform: capitalize; }
 	.badge-paid { background: var(--green-bg); color: var(--green); }
 	.badge-pending { background: var(--orange-bg); color: var(--orange); }
 	.badge-new { background: var(--accent-bg); color: var(--accent); }
-	.badge-completed, .badge-delivered { background: var(--green-bg); color: var(--green); }
+	.badge-delivered { background: var(--green-bg); color: var(--green); }
 
 	.actions-col { width: 70px; text-align: right; }
 	.row-actions { display: flex; gap: 2px; justify-content: flex-end; opacity: 0; transition: opacity 0.15s; }

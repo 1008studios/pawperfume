@@ -1041,13 +1041,7 @@
 	.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
 	@keyframes spin { to { transform: rotate(360deg); } }
 
-	.no-selection {
-		flex: 1; display: flex; flex-direction: column; align-items: center;
-		justify-content: center; color: var(--text-secondary);
-	}
-	.no-selection h3 { margin: 8px 0 4px; color: var(--text); }
-	.no-selection .hint { font-size: 12px; margin-top: 12px; }
-	.no-selection kbd { background: var(--surface-hover); padding: 1px 6px; border-radius: 3px; font-size: 11px; border: 1px solid var(--border); }
+
 
 	.empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
 	.empty-icon { font-size: 48px; margin-bottom: 12px; }

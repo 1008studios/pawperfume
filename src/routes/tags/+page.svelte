@@ -206,15 +206,6 @@
 		background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; 
 		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
 	}
-	.tag-card.clickable-card { cursor: pointer; }
-	.tag-card.clickable-card:hover {
-		transform: translateY(-2px);
-		border-color: var(--accent);
-		box-shadow: var(--shadow-lg);
-	}
-	.tag-card.clickable-card:active {
-		transform: translateY(0);
-	}
 	.tag-preview { padding: 6px 14px; border-radius: 16px; font-size: 13px; font-weight: 600; }
 	.empty-state { text-align: center; padding: 64px; color: var(--text-secondary); width: 100%; }
 	.empty-icon { font-size: 48px; margin-bottom: 12px; }

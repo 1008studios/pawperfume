@@ -641,13 +641,6 @@
 			min-height: 48px;
 		}
 		
-		/* Preset chips */
-		.preset-chip,
-		.amt-chip {
-			padding: 8px 14px;
-			min-height: 40px;
-		}
-		
 		/* Info grid on very small screens */
 		@media (max-width: 360px) {
 			.info-grid {

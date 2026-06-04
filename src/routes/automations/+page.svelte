@@ -102,7 +102,11 @@
 <div class="page">
 	<header class="page-header">
 		<div class="breadcrumb">
-			<span class="breadcrumb-icon"></span>
+			<span class="breadcrumb-icon" style="color: var(--accent); display: flex; align-items: center;">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+				</svg>
+			</span>
 			<h1>Automations</h1>
 		</div>
 		<button class="btn btn-primary" onclick={openNewAutomation}>+ Add Automation</button>
@@ -182,20 +186,20 @@
 			</div>
 			<form onsubmit={e => { e.preventDefault(); saveAutomation(); }}>
 				<div class="form-group">
-					<label>Name</label>
-					<input type="text" bind:value={newAutomation.name} placeholder="Welcome message" />
+					<label for="auto-name">Name</label>
+					<input id="auto-name" type="text" bind:value={newAutomation.name} placeholder="Welcome message" />
 				</div>
 				<div class="form-grid">
 					<div class="form-group">
-						<label>Trigger Type</label>
-						<select bind:value={newAutomation.trigger_type}>
+						<label for="auto-trigger-type">Trigger Type</label>
+						<select id="auto-trigger-type" bind:value={newAutomation.trigger_type}>
 							<option value="keyword">Keyword</option>
 							<option value="postback">Postback</option>
 						</select>
 					</div>
 					<div class="form-group">
-						<label>Trigger Value</label>
-						<input type="text" bind:value={newAutomation.trigger_value} placeholder="hello, GET_STARTED" />
+						<label for="auto-trigger-value">Trigger Value</label>
+						<input id="auto-trigger-value" type="text" bind:value={newAutomation.trigger_value} placeholder="hello, GET_STARTED" />
 					</div>
 				</div>
 				<div class="form-actions">
