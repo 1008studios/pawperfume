@@ -1,6 +1,7 @@
 import { getDb } from '$lib/db';
 import { getAdminPassword } from '$lib/auth';
 import { json } from '@sveltejs/kit';
+import { extractReceiptData } from '$lib/bot-engine';
 
 // Input validation schemas
 const validators = {
@@ -738,8 +739,6 @@ export async function handleAdmin(path: string, method: string, request: Request
 					if (!url) {
 						return json({ error: 'No image URL provided' }, { status: 400 });
 					}
-
-					const { extractReceiptData } = await import('$lib/bot-engine');
 
 					// Extract data using AI
 					const extracted = await extractReceiptData(url);
