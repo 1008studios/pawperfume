@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		open?: boolean;
@@ -8,6 +8,9 @@
 		closable?: boolean;
 		closeOnBackdrop?: boolean;
 		closeOnEscape?: boolean;
+		children?: Snippet;
+		footer?: Snippet;
+		onclose?: () => void;
 	}
 
 	let { 
@@ -16,15 +19,16 @@
 		size = 'medium',
 		closable = true,
 		closeOnBackdrop = true,
-		closeOnEscape = true
+		closeOnEscape = true,
+		children,
+		footer,
+		onclose
 	}: Props = $props();
-
-	const dispatch = createEventDispatcher();
 
 	function close() {
 		if (!closable) return;
 		open = false;
-		dispatch('close');
+		onclose?.();
 	}
 
 	function handleBackdropClick(e: MouseEvent) {
@@ -77,12 +81,12 @@
 			{/if}
 
 			<div class="modal-body">
-				<slot />
+				{@render children?.()}
 			</div>
 
-			{#if $$slots.footer}
+			{#if footer}
 				<div class="modal-footer">
-					<slot name="footer" />
+					{@render footer()}
 				</div>
 			{/if}
 		</div>

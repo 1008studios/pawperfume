@@ -109,11 +109,35 @@
 			<div class="sidebar-header">
 				{#if !$sidebarCollapsed}
 					<div class="brand">
-						<div class="brand-logo" style="width: 28px; height: 28px; border-radius: 50%; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; font-size: 14px;">🧴</div>
+						<div class="brand-logo" style="display: flex; align-items: center; justify-content: center; color: var(--accent);">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="brand-svg-logo">
+								<rect x="10" y="2" width="4" height="2" rx="0.8" fill="currentColor"/>
+								<rect x="9" y="4" width="6" height="2" rx="0.5" fill="currentColor"/>
+								<path d="M5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z" stroke="currentColor" stroke-width="1.8" fill="none"/>
+								<path d="M6 14.5c1.8-0.5 3.5 0.5 5.5 0s3.7-0.5 5.5 0v3.5c0 1.8-1.2 3-3 3H9c-1.8 0-3-1.2-3-3v-3.5z" fill="var(--accent-bg)" opacity="0.6"/>
+								<circle cx="12" cy="14" r="2" fill="currentColor"/>
+								<circle cx="9" cy="11.5" r="1.1" fill="currentColor"/>
+								<circle cx="11.2" cy="10" r="1.1" fill="currentColor"/>
+								<circle cx="12.8" cy="10" r="1.1" fill="currentColor"/>
+								<circle cx="15" cy="11.5" r="1.1" fill="currentColor"/>
+							</svg>
+						</div>
 						<span class="brand-text">PawPerfume</span>
 					</div>
 				{:else}
-					<div class="brand-logo-only" style="width: 24px; height: 24px; border-radius: 50%; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; font-size: 12px; margin: 0 auto;">🧴</div>
+					<div class="brand-logo-only" style="display: flex; align-items: center; justify-content: center; margin: 0 auto; color: var(--accent);">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="brand-svg-logo">
+							<rect x="10" y="2" width="4" height="2" rx="0.8" fill="currentColor"/>
+							<rect x="9" y="4" width="6" height="2" rx="0.5" fill="currentColor"/>
+							<path d="M5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z" stroke="currentColor" stroke-width="1.8" fill="none"/>
+							<path d="M6 14.5c1.8-0.5 3.5 0.5 5.5 0s3.7-0.5 5.5 0v3.5c0 1.8-1.2 3-3 3H9c-1.8 0-3-1.2-3-3v-3.5z" fill="var(--accent-bg)" opacity="0.6"/>
+							<circle cx="12" cy="14" r="2" fill="currentColor"/>
+							<circle cx="9" cy="11.5" r="1.1" fill="currentColor"/>
+							<circle cx="11.2" cy="10" r="1.1" fill="currentColor"/>
+							<circle cx="12.8" cy="10" r="1.1" fill="currentColor"/>
+							<circle cx="15" cy="11.5" r="1.1" fill="currentColor"/>
+						</svg>
+					</div>
 				{/if}
 				<button class="collapse-btn" onclick={toggleSidebar} title="Toggle sidebar">
 					{#if $sidebarCollapsed}

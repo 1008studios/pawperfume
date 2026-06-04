@@ -174,7 +174,13 @@
 			onclick={startEditing}
 			title="Click to edit"
 		>
-			{formatDisplay(value)}
+			<span class="value-text">{formatDisplay(value)}</span>
+			<span class="edit-icon-indicator" aria-hidden="true">
+				<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+					<path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+				</svg>
+			</span>
 		</div>
 	{/if}
 </div>
@@ -188,22 +194,48 @@
 	}
 
 	.view-value {
-		padding: 3px 6px;
-		border-radius: 4px;
+		padding: 4px 8px;
+		border-radius: var(--radius-sm);
 		cursor: pointer;
 		min-height: 24px;
-		transition: background 0.1s ease;
+		transition: background 0.15s ease, border-color 0.15s ease;
 		white-space: pre-wrap;
 		word-break: break-all;
+		border: 1px dashed transparent;
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
 	}
 
 	.view-value:hover {
-		background: var(--surface-hover, rgba(0, 0, 0, 0.05));
+		background: var(--surface-hover);
+		border-color: var(--border-strong);
 	}
 
 	.view-value.placeholder {
-		color: var(--text-tertiary, #a0aec0);
+		color: var(--text-tertiary);
 		font-style: italic;
+	}
+
+	.value-text {
+		flex: 1;
+	}
+
+	.edit-icon-indicator {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--text-tertiary);
+		opacity: 0;
+		transition: opacity 0.2s ease, transform 0.2s ease;
+		transform: translateX(-4px);
+		flex-shrink: 0;
+	}
+
+	.view-value:hover .edit-icon-indicator {
+		opacity: 1;
+		transform: translateX(0);
 	}
 
 	.edit-wrapper {
@@ -215,15 +247,21 @@
 
 	.edit-input {
 		width: 100%;
-		padding: 2px 5px;
+		padding: 4px 8px;
 		font-size: inherit;
 		font-family: inherit;
 		color: inherit;
-		background: var(--bg, #fff);
-		border: 1px solid var(--accent, #4d8ef7);
-		border-radius: 4px;
+		background: var(--surface);
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius-sm);
 		outline: none;
 		box-sizing: border-box;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.edit-input:focus {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-bg);
 	}
 
 	textarea.edit-input {
@@ -232,17 +270,17 @@
 	}
 
 	.select-input {
-		padding: 2px 20px 2px 5px;
+		padding: 4px 24px 4px 8px;
 	}
 
 	.error-tooltip {
 		position: absolute;
 		bottom: 100%;
 		left: 0;
-		background: var(--red, #ef4444);
+		background: var(--red);
 		color: white;
 		font-size: 11px;
-		padding: 2px 6px;
+		padding: 3px 8px;
 		border-radius: 4px;
 		margin-bottom: 4px;
 		z-index: 10;

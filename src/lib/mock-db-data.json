@@ -1,0 +1,592 @@
+{
+  "tenants": [
+    {
+      "id": 1,
+      "slug": "default",
+      "name": "PawPerfume",
+      "brand_name": "PawPerfume",
+      "brand_tagline": "Premium Scents, Delivered",
+      "brand_primary_color": "#8b5cf6",
+      "brand_accent_color": "#ec4899",
+      "brand_favicon_emoji": "🧴",
+      "brand_welcome_message": "Welcome to PawPerfume! 🧴 Premium perfumes delivered to your door. How can we help?",
+      "ai_system_prompt": "You are the friendly assistant of PawPerfume, a premium perfume business. Keep replies short and conversational. Help customers choose scents, place orders, and answer questions. Use Taglish when appropriate.",
+      "ai_language": "tl-en",
+      "ai_tone": "friendly",
+      "ai_enabled": true,
+      "plan": "pro"
+    }
+  ],
+  "tenant_custom_fields": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "field_key": "scent_preference",
+      "field_label": "Scent Preference",
+      "field_type": "select",
+      "field_options": [
+        "Floral",
+        "Woody",
+        "Fresh / Citrus",
+        "Oriental",
+        "Fruity",
+        "Any"
+      ],
+      "apply_to": "orders",
+      "sort_order": 0
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "field_key": "bottle_size",
+      "field_label": "Bottle Size",
+      "field_type": "select",
+      "field_options": [
+        "30ml (₱599)",
+        "50ml (₱899)",
+        "100ml (₱1,499)",
+        "Sample Set (₱299)"
+      ],
+      "apply_to": "orders",
+      "sort_order": 1
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "field_key": "delivery_address",
+      "field_label": "Delivery Address",
+      "field_type": "text",
+      "field_options": [],
+      "apply_to": "orders",
+      "sort_order": 2
+    }
+  ],
+  "bot_flow_steps": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "step_key": "greet",
+      "step_label": "Welcome",
+      "step_type": "auto",
+      "prompt_message": "Welcome to PawPerfume! 🧴 Let me help you find your perfect scent.",
+      "next_step": "ask_name",
+      "input_variable": null,
+      "sort_order": 0
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "step_key": "ask_name",
+      "step_label": "Ask Name",
+      "step_type": "text_input",
+      "prompt_message": "Ano pangalan mo? / What is your name?",
+      "next_step": "ask_scent",
+      "input_variable": "customer_name",
+      "sort_order": 1
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "step_key": "ask_scent",
+      "step_label": "Scent Preference",
+      "step_type": "button_choice",
+      "prompt_message": "Anong type ng scent gusto mo? 🌸",
+      "button_choices": [
+        {
+          "label": "Floral",
+          "next_step": "ask_size"
+        },
+        {
+          "label": "Woody",
+          "next_step": "ask_size"
+        },
+        {
+          "label": "Fresh / Citrus",
+          "next_step": "ask_size"
+        },
+        {
+          "label": "Oriental",
+          "next_step": "ask_size"
+        },
+        {
+          "label": "Fruity",
+          "next_step": "ask_size"
+        },
+        {
+          "label": "Not Sure",
+          "next_step": "ask_size"
+        }
+      ],
+      "next_step": null,
+      "input_variable": "scent_preference",
+      "sort_order": 2
+    },
+    {
+      "id": 4,
+      "tenant_id": 1,
+      "step_key": "ask_size",
+      "step_label": "Bottle Size",
+      "step_type": "button_choice",
+      "prompt_message": "Anong size gusto mo? 🧴",
+      "button_choices": [
+        {
+          "label": "30ml - ₱599",
+          "next_step": "ask_address"
+        },
+        {
+          "label": "50ml - ₱899",
+          "next_step": "ask_address"
+        },
+        {
+          "label": "100ml - ₱1,499",
+          "next_step": "ask_address"
+        },
+        {
+          "label": "Sample Set - ₱299",
+          "next_step": "ask_address"
+        }
+      ],
+      "next_step": null,
+      "input_variable": "bottle_size",
+      "sort_order": 3
+    },
+    {
+      "id": 5,
+      "tenant_id": 1,
+      "step_key": "ask_address",
+      "step_label": "Delivery Address",
+      "step_type": "text_input",
+      "prompt_message": "Saan ipapadala? / Where should we deliver? 🏠",
+      "next_step": "confirm",
+      "input_variable": "delivery_address",
+      "sort_order": 4
+    },
+    {
+      "id": 6,
+      "tenant_id": 1,
+      "step_key": "confirm",
+      "step_label": "Confirmation",
+      "step_type": "auto",
+      "prompt_message": "Salamat! Our team will confirm your order shortly. 🧴✨",
+      "next_step": null,
+      "input_variable": null,
+      "sort_order": 5
+    }
+  ],
+  "faqs": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "question": "How much are your perfumes?",
+      "answer": "Sample Sets from ₱299 • 30ml ₱599 • 50ml ₱899 • 100ml ₱1,499. Free delivery on orders ₱1,000+!",
+      "keywords": "price,cost,magkano,how much",
+      "category": "general",
+      "sort_order": 0
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "question": "What scents are available?",
+      "answer": "We offer Floral 🌸, Woody 🌲, Fresh/Citrus 🍋, Oriental 🌙, and Fruity 🍓 scents. Custom blends also available!",
+      "keywords": "scent,smell,amoy,available",
+      "category": "general",
+      "sort_order": 1
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "question": "How long is delivery?",
+      "answer": "Metro Manila: 1-2 days. Provincial: 3-5 days via LBC/J&T.",
+      "keywords": "delivery,shipping,tagal,how long,kailan",
+      "category": "general",
+      "sort_order": 2
+    },
+    {
+      "id": 4,
+      "tenant_id": 1,
+      "question": "How do I pay?",
+      "answer": "GCash, Maya, BPI/BDO transfer, and COD (Metro Manila only).",
+      "keywords": "payment,pay,gcash,maya,bayad,paano",
+      "category": "general",
+      "sort_order": 3
+    }
+  ],
+  "quick_replies": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "label": "👋 Welcome",
+      "message": "Welcome to PawPerfume! 🧴 Premium perfumes delivered to your door.",
+      "sort_order": 0
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "label": "💰 Pricing",
+      "message": "Our prices: Sample Set ₱299 • 30ml ₱599 • 50ml ₱899 • 100ml ₱1,499",
+      "sort_order": 1
+    }
+  ],
+  "tenant_order_statuses": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "status_key": "new",
+      "status_label": "New",
+      "color": "#4d8ef7",
+      "sort_order": 1
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "status_key": "confirmed",
+      "status_label": "Confirmed",
+      "color": "#f59e0b",
+      "sort_order": 2
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "status_key": "preparing",
+      "status_label": "Preparing",
+      "color": "#8b5cf6",
+      "sort_order": 3
+    },
+    {
+      "id": 4,
+      "tenant_id": 1,
+      "status_key": "delivered",
+      "status_label": "Delivered",
+      "color": "#10b981",
+      "sort_order": 4
+    }
+  ],
+  "tenant_tags": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "tag_key": "vip",
+      "tag_label": "VIP",
+      "color": "#f59e0b"
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "tag_key": "repeat",
+      "tag_label": "Repeat",
+      "color": "#10b981"
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "tag_key": "new",
+      "tag_label": "New",
+      "color": "#4d8ef7"
+    },
+    {
+      "id": 4,
+      "tenant_id": 1,
+      "tag_key": "urgent",
+      "tag_label": "Urgent",
+      "color": "#ef4444"
+    }
+  ],
+  "column_configs": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "table_name": "orders",
+      "column_key": "id",
+      "column_label": "#",
+      "is_visible": true,
+      "sort_order": 0
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "table_name": "orders",
+      "column_key": "customer_name",
+      "column_label": "Customer",
+      "is_visible": true,
+      "sort_order": 1
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "table_name": "orders",
+      "column_key": "amount",
+      "column_label": "Amount",
+      "is_visible": true,
+      "sort_order": 2
+    },
+    {
+      "id": 4,
+      "tenant_id": 1,
+      "table_name": "orders",
+      "column_key": "status",
+      "column_label": "Status",
+      "is_visible": true,
+      "sort_order": 3
+    },
+    {
+      "id": 5,
+      "tenant_id": 1,
+      "table_name": "orders",
+      "column_key": "payment_status",
+      "column_label": "Payment",
+      "is_visible": true,
+      "sort_order": 4
+    },
+    {
+      "id": 6,
+      "tenant_id": 1,
+      "table_name": "orders",
+      "column_key": "updated_at",
+      "column_label": "Date",
+      "is_visible": true,
+      "sort_order": 5
+    }
+  ],
+  "orders": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "conversation_id": 1,
+      "customer_name": "Juan Dela Cruz",
+      "status": "new",
+      "payment_status": "pending",
+      "amount": 899,
+      "custom_fields": {
+        "scent_preference": "Woody",
+        "bottle_size": "50ml (₱899)",
+        "delivery_address": "Quezon City"
+      },
+      "notes": "Please deliver after 5 PM.",
+      "created_at": "2026-06-04T02:00:00.000Z",
+      "updated_at": "2026-06-04T02:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "conversation_id": 2,
+      "customer_name": "Maria Clara",
+      "status": "confirmed",
+      "payment_status": "paid",
+      "amount": 1499,
+      "custom_fields": {
+        "scent_preference": "Floral",
+        "bottle_size": "100ml (₱1,499)",
+        "delivery_address": "Makati City"
+      },
+      "notes": "Gift wrapping requested.",
+      "created_at": "2026-06-03T15:00:00.000Z",
+      "updated_at": "2026-06-04T01:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "conversation_id": 3,
+      "customer_name": "Jose Rizal",
+      "status": "preparing",
+      "payment_status": "paid",
+      "amount": 599,
+      "custom_fields": {
+        "scent_preference": "Fresh / Citrus",
+        "bottle_size": "30ml (₱599)",
+        "delivery_address": "Calamba, Laguna"
+      },
+      "notes": "",
+      "created_at": "2026-06-02T10:00:00.000Z",
+      "updated_at": "2026-06-03T09:00:00.000Z"
+    }
+  ],
+  "conversations": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "sender_id": "user_gcash_fan",
+      "name": "Juan Dela Cruz",
+      "status": "active",
+      "tags": [
+        "new"
+      ],
+      "notes": "Interested in woody scents.",
+      "custom_fields": {
+        "scent_preference": "Woody"
+      },
+      "is_bot_enabled": true,
+      "last_activity_at": "2026-06-04T02:00:00.000Z",
+      "created_at": "2026-06-04T01:30:00.000Z",
+      "updated_at": "2026-06-04T02:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "sender_id": "user_floral_lover",
+      "name": "Maria Clara",
+      "status": "active",
+      "tags": [
+        "vip",
+        "repeat"
+      ],
+      "notes": "Repeated customer.",
+      "custom_fields": {
+        "scent_preference": "Floral"
+      },
+      "is_bot_enabled": false,
+      "last_activity_at": "2026-06-04T01:00:00.000Z",
+      "created_at": "2026-06-03T14:30:00.000Z",
+      "updated_at": "2026-06-04T01:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "sender_id": "user_calamba",
+      "name": "Jose Rizal",
+      "status": "done",
+      "tags": [],
+      "notes": "Prefers fast shipping.",
+      "custom_fields": {},
+      "is_bot_enabled": true,
+      "last_activity_at": "2026-06-03T09:00:00.000Z",
+      "created_at": "2026-06-02T09:00:00.000Z",
+      "updated_at": "2026-06-03T09:00:00.000Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "conversation_id": 1,
+      "sender_type": "user",
+      "message_type": "text",
+      "content": "Hi! Do you have woody perfumes?",
+      "mid": "m1",
+      "created_at": "2026-06-04T01:30:00.000Z"
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "conversation_id": 1,
+      "sender_type": "bot",
+      "message_type": "text",
+      "content": "Yes, we do! We recommend our Forest Mist scent. It is one of our best-sellers 🌲. Would you like to check prices?",
+      "mid": "m2",
+      "created_at": "2026-06-04T01:31:00.000Z"
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "conversation_id": 1,
+      "sender_type": "user",
+      "message_type": "text",
+      "content": "How much for 50ml?",
+      "mid": "m3",
+      "created_at": "2026-06-04T01:45:00.000Z"
+    },
+    {
+      "id": 4,
+      "tenant_id": 1,
+      "conversation_id": 1,
+      "sender_type": "agent",
+      "message_type": "text",
+      "content": "Our 50ml bottle is ₱899, and we have free shipping if you spend ₱1,000 or more! GCash or bank transfer accepted.",
+      "mid": "m4",
+      "created_at": "2026-06-04T01:50:00.000Z"
+    }
+  ],
+  "ledger_entries": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "date": "2026-06-04",
+      "description": "Order #2 sale (Maria Clara)",
+      "category": "sales",
+      "amount": 1499,
+      "type": "income",
+      "created_at": "2026-06-04T01:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "date": "2026-06-03",
+      "description": "Fragrance oils inventory restock",
+      "category": "inventory",
+      "amount": 5000,
+      "type": "expense",
+      "created_at": "2026-06-03T05:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "date": "2026-06-03",
+      "description": "Order #3 sale (Jose Rizal)",
+      "category": "sales",
+      "amount": 599,
+      "type": "income",
+      "created_at": "2026-06-03T09:00:00.000Z"
+    }
+  ],
+  "automations": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "name": "Welcome Auto-Reply",
+      "trigger_type": "message_received",
+      "trigger_value": "hello,hi,start,magkano",
+      "steps": [
+        {
+          "type": "reply",
+          "value": "Hello there! Welcome to PawPerfume. How can we serve you today? 🧴"
+        }
+      ],
+      "is_active": true,
+      "created_at": "2026-06-01T00:00:00.000Z"
+    }
+  ],
+  "tenant_finance_categories": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "category_key": "sales",
+      "category_label": "Sales",
+      "type": "income",
+      "color": "#10b981"
+    },
+    {
+      "id": 2,
+      "tenant_id": 1,
+      "category_key": "inventory",
+      "category_label": "Inventory",
+      "type": "expense",
+      "color": "#ef4444"
+    },
+    {
+      "id": 3,
+      "tenant_id": 1,
+      "category_key": "shipping",
+      "category_label": "Shipping Fees",
+      "type": "expense",
+      "color": "#f59e0b"
+    },
+    {
+      "id": 4,
+      "tenant_id": 1,
+      "category_key": "marketing",
+      "category_label": "Marketing / Ads",
+      "type": "expense",
+      "color": "#8b5cf6"
+    }
+  ],
+  "media_assets": [
+    {
+      "id": 1,
+      "tenant_id": 1,
+      "category": "product",
+      "filename": "sample_bottle.jpg",
+      "url": "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=400",
+      "created_at": "2026-06-01T00:00:00.000Z"
+    }
+  ],
+  "receipt_extractions": []
+}
