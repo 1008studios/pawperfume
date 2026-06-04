@@ -175,7 +175,11 @@
 		</aside>
 
 		<main class="main-content">
-			{@render children()}
+			{#key $page.url.pathname}
+				<div class="page-transition-wrapper">
+					{@render children()}
+				</div>
+			{/key}
 		</main>
 		<MobileBottomNav unreadCount={unreadChats} />
 	</div>
@@ -351,5 +355,24 @@
 		.sidebar.collapsed { width: 260px; transform: translateX(-100%); }
 		.sidebar.collapsed.mobile-open { transform: translateX(0); }
 		.main-content { padding-top: 60px; padding-bottom: 80px; }
+	}
+	@keyframes page-in {
+		from {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.page-transition-wrapper {
+		animation: page-in 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		overflow: auto;
 	}
 </style>

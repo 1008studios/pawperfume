@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api, timeAgo, showToast } from '$lib/api';
 	import type { Conversation, Message, QuickReply, Tag, CustomField } from '$lib/types';
+	import AutoOrderExtractor from '$lib/components/AutoOrderExtractor.svelte';
 
 	let conversations = $state<Conversation[]>([]);
 	let selectedConv = $state<Conversation | null>(null);
@@ -26,6 +27,31 @@
 	let showQuickRepliesPanel = $state(false);
 	let activeTab = $state<'all' | 'unread' | 'bots'>('all');
 	let showMobileChat = $state(false); // Track mobile chat view state
+
+	let showExtractorModal = $state(false);
+	let extractorMessageText = $state('');
+
+	function triggerOrderExtraction(text: string) {
+		extractorMessageText = text;
+		showExtractorModal = true;
+	}
+
+	async function handleOrderExtracted(extracted: { customer_name?: string; product?: string; quantity?: number; price?: number; address?: string; notes?: string; confidence: number }) {
+		try {
+			const orderPayload = {
+				customerName: extracted.customer_name || selectedConv?.name || `Customer ${selectedConv?.sender_id.slice(0, 8)}`,
+				amount: extracted.price || 0,
+				status: 'new',
+				paymentStatus: 'pending',
+				notes: `Extracted from message:\n"${extractorMessageText}"\n\nProduct: ${extracted.product || 'Not specified'}\nQuantity: ${extracted.quantity || 1}\nAddress: ${extracted.address || 'Not specified'}\nNotes: ${extracted.notes || ''}`
+			};
+			await api.createOrder(orderPayload);
+			showToast('Order created successfully from message!', 'success');
+			showExtractorModal = false;
+		} catch (err) {
+			showToast('Failed to create order from message.', 'error');
+		}
+	}
 
 	const commonEmojis = [':)', ':D', '<3', 'OK', 'Thanks', 'Hi', 'Yes', 'No', 'Sorry', 'Busy'];
 
@@ -416,15 +442,33 @@
 								<div class="message-avatar">{(selectedConv.name || 'U').charAt(0).toUpperCase()}</div>
 							{/if}
 							<div class="message-wrapper">
-								<div class="message-bubble">
-									{#if msg.sender_type === 'bot'}
-										<div class="message-sender"> Bot</div>
-									{/if}
-									<div class="message-content">{msg.content}</div>
-									{#if msg.media_url}
-										<div class="message-media">
-											<img src={msg.media_url} alt="attachment" loading="lazy" />
-										</div>
+								<div class="message-bubble-row" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+									<div class="message-bubble">
+										{#if msg.sender_type === 'bot'}
+											<div class="message-sender"> Bot</div>
+										{/if}
+										<div class="message-content">{msg.content}</div>
+										{#if msg.media_url}
+											<div class="message-media">
+												<img src={msg.media_url} alt="attachment" loading="lazy" />
+											</div>
+										{/if}
+									</div>
+									{#if msg.sender_type === 'customer' && msg.content}
+										<button 
+											class="btn-icon btn-extract-order" 
+											onclick={() => triggerOrderExtraction(msg.content!)} 
+											title="Extract Order from Message"
+											aria-label="Extract Order"
+										>
+											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+												<polyline points="14 2 14 8 20 8"></polyline>
+												<line x1="16" y1="13" x2="8" y2="13"></line>
+												<line x1="16" y1="17" x2="8" y2="17"></line>
+												<polyline points="10 9 9 9 8 9"></polyline>
+											</svg>
+										</button>
 									{/if}
 								</div>
 								<div class="message-meta">
@@ -764,6 +808,12 @@
 			</div>
 		{/if}
 	</div>
+	<AutoOrderExtractor 
+		open={showExtractorModal} 
+		messageText={extractorMessageText} 
+		onCreate={handleOrderExtracted} 
+		onClose={() => showExtractorModal = false} 
+	/>
 </div>
 
 <style>
@@ -1217,5 +1267,29 @@
 			width: auto;
 		}
 		.emoji-grid { grid-template-columns: repeat(7, 1fr); }
+	}
+
+	.btn-extract-order {
+		opacity: 0;
+		transition: opacity 0.2s ease;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		box-shadow: var(--shadow-sm);
+		padding: 6px;
+		border-radius: 6px;
+		color: var(--text-secondary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+	.btn-extract-order:hover {
+		color: var(--accent);
+		border-color: var(--accent);
+		background: var(--accent-bg);
+	}
+	.message-wrapper:hover .btn-extract-order {
+		opacity: 1;
 	}
 </style>

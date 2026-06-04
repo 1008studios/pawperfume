@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-
 	interface ExtractedOrder {
 		customer_name?: string;
 		product?: string;
@@ -14,11 +12,11 @@
 	interface Props {
 		open: boolean;
 		messageText: string;
+		onCreate: (order: ExtractedOrder) => void;
+		onClose: () => void;
 	}
 
-	let { open, messageText }: Props = $props();
-
-	const dispatch = createEventDispatcher();
+	let { open, messageText, onCreate, onClose }: Props = $props();
 
 	let extractedOrder = $state<ExtractedOrder | null>(null);
 	let isExtracting = $state(false);
@@ -73,13 +71,13 @@
 
 	function createOrder() {
 		if (extractedOrder) {
-			dispatch('create', extractedOrder);
+			onCreate(extractedOrder);
 		}
 	}
 
 	function close() {
 		extractedOrder = null;
-		dispatch('close');
+		onClose();
 	}
 
 	// Auto-extract when modal opens
@@ -91,11 +89,13 @@
 </script>
 
 {#if open}
-	<div class="modal-overlay" onclick={close} role="presentation">
-		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog">
+	<div class="modal-overlay" onclick={close} role="presentation" onkeydown={(e) => e.key === 'Escape' && close()}>
+		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog" aria-labelledby="modal-title">
 			<div class="modal-header">
-				<h2>Create Order from Message </h2>
-				<button class="btn-icon" onclick={close}></button>
+				<h2 id="modal-title">Create Order from Message</h2>
+				<button class="btn-icon" onclick={close} aria-label="Close dialog">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+				</button>
 			</div>
 
 			<div class="modal-body">
@@ -112,8 +112,9 @@
 
 					<div class="extracted-fields">
 						<div class="field">
-							<label>Customer Name</label>
+							<label for="ext-customer-name">Customer Name</label>
 							<input 
+								id="ext-customer-name"
 								type="text" 
 								bind:value={extractedOrder.customer_name}
 								placeholder="Not detected"
@@ -121,8 +122,9 @@
 						</div>
 
 						<div class="field">
-							<label>Product</label>
+							<label for="ext-product">Product</label>
 							<input 
+								id="ext-product"
 								type="text" 
 								bind:value={extractedOrder.product}
 								placeholder="Not detected"
@@ -131,8 +133,9 @@
 
 						<div class="field-row">
 							<div class="field">
-								<label>Quantity</label>
+								<label for="ext-quantity">Quantity</label>
 								<input 
+									id="ext-quantity"
 									type="number" 
 									bind:value={extractedOrder.quantity}
 									placeholder="1"
@@ -141,8 +144,9 @@
 							</div>
 
 							<div class="field">
-								<label>Price (₱)</label>
+								<label for="ext-price">Price (₱)</label>
 								<input 
+									id="ext-price"
 									type="number" 
 									bind:value={extractedOrder.price}
 									placeholder="0.00"
@@ -153,8 +157,9 @@
 						</div>
 
 						<div class="field">
-							<label>Delivery Address</label>
+							<label for="ext-address">Delivery Address</label>
 							<textarea 
+								id="ext-address"
 								bind:value={extractedOrder.address}
 								placeholder="Not detected"
 								rows="2"
@@ -162,8 +167,9 @@
 						</div>
 
 						<div class="field">
-							<label>Notes</label>
+							<label for="ext-notes">Notes</label>
 							<textarea 
+								id="ext-notes"
 								bind:value={extractedOrder.notes}
 								placeholder="Additional notes..."
 								rows="2"
@@ -172,7 +178,7 @@
 					</div>
 
 					<div class="original-message">
-						<label>Original Message:</label>
+						<span class="original-message-title">Original Message:</span>
 						<p>{messageText}</p>
 					</div>
 				{/if}
@@ -184,7 +190,7 @@
 						Cancel
 					</button>
 					<button class="btn btn-primary" onclick={createOrder}>
-						Create Order 
+						Create Order
 					</button>
 				</div>
 			{/if}
