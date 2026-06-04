@@ -170,18 +170,18 @@
 			<form onsubmit={e => { e.preventDefault(); saveTag(); }}>
 				<div class="form-grid">
 					<div class="form-group">
-						<label>Key</label>
-						<input type="text" bind:value={newTag.tagKey} placeholder="vip" required />
+						<label for="tag-key">Key</label>
+						<input id="tag-key" type="text" bind:value={newTag.tagKey} placeholder="vip" required />
 					</div>
 					<div class="form-group">
-						<label>Label</label>
-						<input type="text" bind:value={newTag.tagLabel} placeholder="VIP Customer" />
+						<label for="tag-label">Label</label>
+						<input id="tag-label" type="text" bind:value={newTag.tagLabel} placeholder="VIP Customer" />
 					</div>
 				</div>
 				<div class="form-group">
-					<label>Color</label>
+					<label for="tag-color">Color</label>
 					<div class="color-picker">
-						<input type="color" bind:value={newTag.color} />
+						<input id="tag-color" type="color" bind:value={newTag.color} />
 						<span class="color-preview" style="background: {newTag.color}"></span>
 						<code>{newTag.color}</code>
 					</div>

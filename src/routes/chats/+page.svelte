@@ -20,8 +20,8 @@
 	let showEmojiPicker = $state(false);
 	let isTyping = $state(false);
 	let typingTimeout: ReturnType<typeof setTimeout>;
-	let fileInput: HTMLInputElement;
-	let attachedFile: File | null = null;
+	let fileInput = $state<HTMLInputElement>();
+	let attachedFile = $state<File | null>(null);
 	let attachedPreview = $state('');
 	let showQuickRepliesPanel = $state(false);
 	let activeTab = $state<'all' | 'unread' | 'bots'>('all');
@@ -29,12 +29,13 @@
 
 	const commonEmojis = [':)', ':D', '<3', 'OK', 'Thanks', 'Hi', 'Yes', 'No', 'Sorry', 'Busy'];
 
-	let messagesContainer: HTMLDivElement;
+	let messagesContainer = $state<HTMLDivElement>();
 
 	$effect(() => {
-		if (messages.length > 0 && messagesContainer) {
+		const container = messagesContainer;
+		if (messages.length > 0 && container) {
 			setTimeout(() => {
-				messagesContainer.scrollTop = messagesContainer.scrollHeight;
+				container.scrollTop = container.scrollHeight;
 			}, 100);
 		}
 	});
@@ -560,9 +561,10 @@
 								<div class="custom-fields-form">
 									{#each conversationCustomFields as cf}
 										<div class="custom-field-item">
-											<label class="custom-field-label">{cf.field_label || cf.field_key}</label>
+											<label class="custom-field-label" for="cf-input-{cf.field_key}">{cf.field_label || cf.field_key}</label>
 											{#if cf.field_type === 'dropdown'}
 												<select 
+													id="cf-input-{cf.field_key}"
 													class="custom-field-select" 
 													value={String((selectedConv.custom_fields || {})[cf.field_key] || '')}
 													onchange={(e) => updateCustomField(cf.field_key, (e.target as HTMLSelectElement).value)}
@@ -574,6 +576,7 @@
 												</select>
 											{:else if cf.field_type === 'number'}
 												<input 
+													id="cf-input-{cf.field_key}"
 													type="number" 
 													class="custom-field-input" 
 													value={Number((selectedConv.custom_fields || {})[cf.field_key] || 0)}
@@ -581,6 +584,7 @@
 												/>
 											{:else}
 												<input 
+													id="cf-input-{cf.field_key}"
 													type="text" 
 													class="custom-field-input" 
 													value={String((selectedConv.custom_fields || {})[cf.field_key] || '')}

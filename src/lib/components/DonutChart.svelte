@@ -9,6 +9,7 @@
 	let total = $derived(data.reduce((sum, d) => sum + d.value, 0));
 	let segments = $derived(() => {
 		let currentAngle = 0;
+		if (total === 0) return [];
 		return data.map(item => {
 			const angle = (item.value / total) * 360;
 			const startAngle = currentAngle;

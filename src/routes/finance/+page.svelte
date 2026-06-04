@@ -344,7 +344,7 @@
 					<input id="fin-desc" type="text" bind:value={newEntry.description} placeholder="What was this for?" />
 				</div>
 				<div class="form-group">
-					<label>Quick Category</label>
+					<label for="fin-cat">Quick Category</label>
 					<div class="preset-cats">
 						{#each presetCategories as cat}
 							<button type="button" class="preset-chip" class:active={newEntry.category === cat} onclick={() => newEntry.category = cat}>{cat}</button>

@@ -179,12 +179,12 @@
 			</div>
 			<form onsubmit={e => { e.preventDefault(); saveReply(); }}>
 				<div class="form-group">
-					<label>Label</label>
-					<input type="text" bind:value={newReply.label} placeholder="Short name" />
+					<label for="reply-label">Label</label>
+					<input id="reply-label" type="text" bind:value={newReply.label} placeholder="Short name" />
 				</div>
 				<div class="form-group">
-					<label>Message</label>
-					<textarea bind:value={newReply.message} placeholder="Full message..." rows="4"></textarea>
+					<label for="reply-message">Message</label>
+					<textarea id="reply-message" bind:value={newReply.message} placeholder="Full message..." rows="4"></textarea>
 				</div>
 				<div class="form-actions">
 					<button type="button" class="btn btn-ghost" onclick={() => { showForm = false; editingReply = null; }}>Cancel</button>

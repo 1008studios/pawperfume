@@ -242,17 +242,17 @@
 			</div>
 			<form onsubmit={e => { e.preventDefault(); addMedia(); }}>
 				<div class="form-group">
-					<label>URL</label>
-					<input type="url" bind:value={newMedia.url} placeholder="https://..." required />
+					<label for="media-url">URL</label>
+					<input id="media-url" type="url" bind:value={newMedia.url} placeholder="https://..." required />
 				</div>
 				<div class="form-grid">
 					<div class="form-group">
-						<label>Filename</label>
-						<input type="text" bind:value={newMedia.filename} placeholder="product-photo.jpg" />
+						<label for="media-filename">Filename</label>
+						<input id="media-filename" type="text" bind:value={newMedia.filename} placeholder="product-photo.jpg" />
 					</div>
 					<div class="form-group">
-						<label>Category</label>
-						<input type="text" bind:value={newMedia.category} placeholder="products, receipts" />
+						<label for="media-category">Category</label>
+						<input id="media-category" type="text" bind:value={newMedia.category} placeholder="products, receipts" />
 					</div>
 				</div>
 				<div class="form-actions">

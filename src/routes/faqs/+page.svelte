@@ -189,16 +189,16 @@
 			</div>
 			<form onsubmit={e => { e.preventDefault(); saveFaq(); }}>
 				<div class="form-group">
-					<label>Question</label>
-					<input type="text" bind:value={newFaq.question} placeholder="What do customers ask?" />
+					<label for="faq-question">Question</label>
+					<input id="faq-question" type="text" bind:value={newFaq.question} placeholder="What do customers ask?" />
 				</div>
 				<div class="form-group">
-					<label>Answer</label>
-					<textarea bind:value={newFaq.answer} placeholder="Your answer..." rows="3"></textarea>
+					<label for="faq-answer">Answer</label>
+					<textarea id="faq-answer" bind:value={newFaq.answer} placeholder="Your answer..." rows="3"></textarea>
 				</div>
 				<div class="form-group">
-					<label>Keywords (comma-separated)</label>
-					<input type="text" bind:value={newFaq.keywords} placeholder="price, cost, how much" />
+					<label for="faq-keywords">Keywords (comma-separated)</label>
+					<input id="faq-keywords" type="text" bind:value={newFaq.keywords} placeholder="price, cost, how much" />
 				</div>
 				<div class="form-actions">
 					<button type="button" class="btn btn-ghost" onclick={() => { showForm = false; editingFaq = null; }}>Cancel</button>

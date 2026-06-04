@@ -568,6 +568,8 @@
 					</div>
 					<div class="kanban-cards">
 						{#each orders.filter(o => o.status === status.status_key) as order}
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
 							<div class="kanban-card" onclick={() => editOrder(order)}>
 								<div class="kanban-card-header">
 									<span class="order-id">#{order.id}</span>

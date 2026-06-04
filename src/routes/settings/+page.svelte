@@ -405,7 +405,7 @@
 				
 				{#if editingCf.field_type === 'select'}
 					<div class="form-group" style="margin-bottom:0; display:flex; flex-direction:column; gap:6px;">
-						<label>Dropdown Options List</label>
+						<label for="cf-edit-new-opt">Dropdown Options List</label>
 						<div style="display:flex; flex-wrap:wrap; gap:6px; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; min-height:48px;">
 							{#each editingCf.field_options || [] as opt, idx}
 								<span style="display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); padding:2px 8px; border-radius:12px; font-size:12px; color:var(--text);">
@@ -415,7 +415,7 @@
 							{/each}
 						</div>
 						<div style="display:flex; gap:8px; margin-top:4px;">
-							<input type="text" placeholder="Add new option..." bind:value={newOptionText} onkeydown={e => e.key === 'Enter' && (e.preventDefault(), addOptionToEditingCf())} style="flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);" />
+							<input id="cf-edit-new-opt" type="text" placeholder="Add new option..." bind:value={newOptionText} onkeydown={e => e.key === 'Enter' && (e.preventDefault(), addOptionToEditingCf())} style="flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);" />
 							<button type="button" class="btn btn-primary btn-sm" onclick={addOptionToEditingCf}>Add</button>
 						</div>
 					</div>
@@ -455,7 +455,7 @@
 				
 				{#if newCfType === 'select'}
 					<div class="form-group" style="margin-bottom:0; display:flex; flex-direction:column; gap:6px;">
-						<label>Dropdown Options List</label>
+						<label for="cf-new-opt">Dropdown Options List</label>
 						<div style="display:flex; flex-wrap:wrap; gap:6px; padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; min-height:48px;">
 							{#each newCfOptions as opt, idx}
 								<span style="display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); padding:2px 8px; border-radius:12px; font-size:12px; color:var(--text);">
@@ -465,7 +465,7 @@
 							{/each}
 						</div>
 						<div style="display:flex; gap:8px; margin-top:4px;">
-							<input type="text" placeholder="Add option..." bind:value={newOptionText} onkeydown={e => e.key === 'Enter' && (e.preventDefault(), addOptionToNewCf())} style="flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);" />
+							<input id="cf-new-opt" type="text" placeholder="Add option..." bind:value={newOptionText} onkeydown={e => e.key === 'Enter' && (e.preventDefault(), addOptionToNewCf())} style="flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--bg); color:var(--text);" />
 							<button type="button" class="btn btn-primary btn-sm" onclick={addOptionToNewCf}>Add</button>
 						</div>
 					</div>
