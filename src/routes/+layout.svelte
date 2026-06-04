@@ -107,25 +107,8 @@
 
 		<aside class="sidebar" class:collapsed={$sidebarCollapsed} class:mobile-open={mobileSidebarOpen}>
 			<div class="sidebar-header">
-				{#if !$sidebarCollapsed}
-					<div class="brand">
-						<div class="brand-logo" style="display: flex; align-items: center; justify-content: center; color: var(--accent);">
-							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="brand-svg-logo">
-								<rect x="10" y="2" width="4" height="2" rx="0.8" fill="currentColor"/>
-								<rect x="9" y="4" width="6" height="2" rx="0.5" fill="currentColor"/>
-								<path d="M5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z" stroke="currentColor" stroke-width="1.8" fill="none"/>
-								<path d="M6 14.5c1.8-0.5 3.5 0.5 5.5 0s3.7-0.5 5.5 0v3.5c0 1.8-1.2 3-3 3H9c-1.8 0-3-1.2-3-3v-3.5z" fill="var(--accent-bg)" opacity="0.6"/>
-								<circle cx="12" cy="14" r="2" fill="currentColor"/>
-								<circle cx="9" cy="11.5" r="1.1" fill="currentColor"/>
-								<circle cx="11.2" cy="10" r="1.1" fill="currentColor"/>
-								<circle cx="12.8" cy="10" r="1.1" fill="currentColor"/>
-								<circle cx="15" cy="11.5" r="1.1" fill="currentColor"/>
-							</svg>
-						</div>
-						<span class="brand-text">PawPerfume</span>
-					</div>
-				{:else}
-					<div class="brand-logo-only" style="display: flex; align-items: center; justify-content: center; margin: 0 auto; color: var(--accent);">
+				<div class="brand">
+					<div class="brand-logo" style="display: flex; align-items: center; justify-content: center; color: var(--accent);">
 						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="brand-svg-logo">
 							<rect x="10" y="2" width="4" height="2" rx="0.8" fill="currentColor"/>
 							<rect x="9" y="4" width="6" height="2" rx="0.5" fill="currentColor"/>
@@ -138,7 +121,8 @@
 							<circle cx="15" cy="11.5" r="1.1" fill="currentColor"/>
 						</svg>
 					</div>
-				{/if}
+					<span class="brand-text">PawPerfume</span>
+				</div>
 				<button class="collapse-btn" onclick={toggleSidebar} title="Toggle sidebar">
 					{#if $sidebarCollapsed}
 						<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 12l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -150,22 +134,18 @@
 
 			<nav class="sidebar-nav">
 				{#each sections as section}
-					{#if !$sidebarCollapsed}
-						<div class="nav-section">{section}</div>
-					{/if}
+					<div class="nav-section">{section}</div>
 					{#each navItems.filter(i => i.section === section) as item}
 						<a href={item.path} class="nav-item" class:active={isActive(item.path)} title={$sidebarCollapsed ? item.label : ''} onclick={handleNavClick}>
 							<span class="nav-icon">
 								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{@html item.svg}</svg>
 							</span>
-							{#if !$sidebarCollapsed}
-								<span class="nav-label">{item.label}</span>
-								{#if item.badge && item.path === '/chats' && unreadChats > 0}
-									<span class="nav-badge">{unreadChats}</span>
-								{/if}
-								{#if item.badge && item.path === '/orders' && pendingOrders > 0}
-									<span class="nav-badge">{pendingOrders}</span>
-								{/if}
+							<span class="nav-label">{item.label}</span>
+							{#if item.badge && item.path === '/chats' && unreadChats > 0}
+								<span class="nav-badge">{unreadChats}</span>
+							{/if}
+							{#if item.badge && item.path === '/orders' && pendingOrders > 0}
+								<span class="nav-badge">{pendingOrders}</span>
 							{/if}
 						</a>
 					{/each}
@@ -183,17 +163,13 @@
 							{/if}
 						</svg>
 					</span>
-					{#if !$sidebarCollapsed}
-						<span class="nav-label">{$theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-					{/if}
+					<span class="nav-label">{$theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
 				</button>
 				<button class="nav-item" onclick={logout} title={$sidebarCollapsed ? 'Logout' : ''}>
 					<span class="nav-icon">
 						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><path d="M21 12H9"/></svg>
 					</span>
-					{#if !$sidebarCollapsed}
-						<span class="nav-label">Logout</span>
-					{/if}
+					<span class="nav-label">Logout</span>
 				</button>
 			</div>
 		</aside>
@@ -231,7 +207,7 @@
 
 	.sidebar {
 		width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border);
-		display: flex; flex-direction: column; transition: width 0.2s ease; overflow: hidden; flex-shrink: 0;
+		display: flex; flex-direction: column; transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; flex-shrink: 0;
 	}
 	.sidebar.collapsed { width: 52px; }
 
@@ -240,10 +216,19 @@
 		padding: 0 12px; border-bottom: 1px solid var(--border);
 	}
 
-	.brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
-	.brand-logo { display: flex; align-items: center; justify-content: center; color: var(--accent); }
-	.brand-text { white-space: nowrap; }
-	.brand-logo-only { display: flex; align-items: center; justify-content: center; width: 100%; color: var(--accent); }
+	.brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; overflow: hidden; width: 100%; }
+	.brand-logo { display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
+	.brand-text {
+		white-space: nowrap;
+		transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		opacity: 1;
+		transform: translateX(0);
+	}
+	.sidebar.collapsed .brand-text {
+		opacity: 0;
+		transform: translateX(-10px);
+		pointer-events: none;
+	}
 
 	.collapse-btn {
 		background: none; border: none; color: var(--text-secondary); padding: 4px;
@@ -257,6 +242,17 @@
 	.nav-section {
 		font-size: 11px; font-weight: 600; color: var(--text-tertiary);
 		text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 8px 4px;
+		transition: opacity 0.15s ease, height 0.15s ease, padding 0.15s ease;
+		opacity: 1;
+		height: auto;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.sidebar.collapsed .nav-section {
+		opacity: 0;
+		height: 0;
+		padding: 0;
+		pointer-events: none;
 	}
 
 	.nav-item {
@@ -280,11 +276,34 @@
 	}
 
 	.nav-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-	.nav-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.nav-label {
+		flex: 1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		opacity: 1;
+		transform: translateX(0);
+	}
+	.sidebar.collapsed .nav-label {
+		opacity: 0;
+		transform: translateX(-10px);
+		pointer-events: none;
+	}
 
 	.nav-badge {
 		background: var(--red); color: white; font-size: 11px; font-weight: 600;
 		padding: 1px 6px; border-radius: 10px; min-width: 18px; text-align: center;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	.sidebar.collapsed .nav-badge {
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		transform: scale(0.8);
+		font-size: 9px;
+		padding: 1px 4px;
+		min-width: 14px;
 	}
 
 	.sidebar-footer { border-top: 1px solid var(--border); padding: 6px; }

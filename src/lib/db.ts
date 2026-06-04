@@ -271,7 +271,15 @@ async function getMockDb() {
 						if (cleanVal.startsWith("'") && cleanVal.endsWith("'")) {
 							cleanVal = cleanVal.substring(1, cleanVal.length - 1);
 						}
-						newRow[col] = isNaN(Number(cleanVal)) ? cleanVal : Number(cleanVal);
+						if (cleanVal.toLowerCase() === 'true') {
+							newRow[col] = true;
+						} else if (cleanVal.toLowerCase() === 'false') {
+							newRow[col] = false;
+						} else if (cleanVal.toLowerCase() === 'null') {
+							newRow[col] = null;
+						} else {
+							newRow[col] = isNaN(Number(cleanVal)) ? cleanVal : Number(cleanVal);
+						}
 					}
 				}
 				
@@ -317,7 +325,15 @@ async function getMockDb() {
 								if (cleanVal.startsWith("'") && cleanVal.endsWith("'")) {
 									cleanVal = cleanVal.substring(1, cleanVal.length - 1);
 								}
-								row[col] = isNaN(Number(cleanVal)) ? cleanVal : Number(cleanVal);
+								if (cleanVal.toLowerCase() === 'true') {
+									row[col] = true;
+								} else if (cleanVal.toLowerCase() === 'false') {
+									row[col] = false;
+								} else if (cleanVal.toLowerCase() === 'null') {
+									row[col] = null;
+								} else {
+									row[col] = isNaN(Number(cleanVal)) ? cleanVal : Number(cleanVal);
+								}
 							}
 						}
 					});

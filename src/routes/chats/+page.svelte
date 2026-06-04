@@ -1,15 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api, timeAgo, showToast } from '$lib/api';
-	import type { Conversation, Message, QuickReply } from '$lib/types';
+	import type { Conversation, Message, QuickReply, Tag, CustomField } from '$lib/types';
 
 	let conversations = $state<Conversation[]>([]);
 	let selectedConv = $state<Conversation | null>(null);
 	let messages = $state<Message[]>([]);
 	let quickReplies = $state<QuickReply[]>([]);
+	let allTags = $state<Tag[]>([]);
+	let conversationCustomFields = $state<CustomField[]>([]);
 	let loading = $state(true);
 	let sendingMessage = $state(false);
+	let savingNotes = $state(false);
 	let replyText = $state('');
+	let notesText = $state('');
 	let searchQuery = $state('');
 	let messageSearchQuery = $state('');
 	let showInfoPanel = $state(false);
@@ -36,7 +40,7 @@
 	});
 
 	onMount(() => {
-		Promise.all([loadConversations(), loadQuickReplies()]);
+		Promise.all([loadConversations(), loadQuickReplies(), loadAllTags(), loadCustomFields()]);
 		startPolling();
 		return () => stopPolling();
 	});
@@ -56,10 +60,34 @@
 		if (pollInterval) clearInterval(pollInterval);
 	}
 
+	async function loadAllTags() {
+		try {
+			allTags = await api.tags() as Tag[];
+		} catch (err) {
+			console.error('Failed to load tags:', err);
+		}
+	}
+
+	async function loadCustomFields() {
+		try {
+			const cfs = await api.customFields() as CustomField[];
+			conversationCustomFields = cfs.filter(cf => cf.apply_to === 'conversations' || cf.apply_to === 'customers');
+		} catch (err) {
+			console.error('Failed to load custom fields:', err);
+		}
+	}
+
 	async function loadConversations() {
 		try {
 			const res = await api.conversations();
 			conversations = res.conversations as Conversation[];
+			const current = selectedConv;
+			if (current) {
+				const updated = conversations.find(c => c.id === current.id);
+				if (updated) {
+					selectedConv = updated;
+				}
+			}
 		} catch (err) {
 			console.error('Failed to load conversations:', err);
 		} finally {
@@ -87,9 +115,97 @@
 
 	async function selectConversation(conv: Conversation) {
 		selectedConv = conv;
+		notesText = conv.notes || '';
 		showInfoPanel = false;
 		showMobileChat = true; // Show chat on mobile when conversation is selected
 		await loadMessages(conv.id);
+	}
+
+	async function updateConvStatus(status: string) {
+		if (!selectedConv) return;
+		try {
+			selectedConv.status = status;
+			await api.updateConversation(selectedConv.id, { status });
+			await loadConversations();
+			showToast('Status updated.', 'success');
+		} catch (err) {
+			showToast('Failed to update status.', 'error');
+			console.error(err);
+		}
+	}
+
+	async function toggleBot(isBotEnabled: boolean) {
+		if (!selectedConv) return;
+		try {
+			selectedConv.is_bot_enabled = isBotEnabled;
+			await api.updateConversation(selectedConv.id, { is_bot_enabled: isBotEnabled });
+			await loadConversations();
+			showToast(isBotEnabled ? 'AI Bot enabled.' : 'AI Bot disabled.', 'success');
+		} catch (err) {
+			showToast('Failed to toggle bot.', 'error');
+			console.error(err);
+		}
+	}
+
+	async function saveNotes() {
+		if (!selectedConv) return;
+		savingNotes = true;
+		try {
+			selectedConv.notes = notesText;
+			await api.updateConversation(selectedConv.id, { notes: notesText });
+			await loadConversations();
+			showToast('Notes saved.', 'success');
+		} catch (err) {
+			showToast('Failed to save notes.', 'error');
+			console.error(err);
+		} finally {
+			savingNotes = false;
+		}
+	}
+
+	async function addTag(tagKey: string) {
+		if (!selectedConv) return;
+		const currentTags = selectedConv.tags || [];
+		if (currentTags.includes(tagKey)) return;
+		const updatedTags = [...currentTags, tagKey];
+		try {
+			selectedConv.tags = updatedTags;
+			await api.updateConversation(selectedConv.id, { tags: updatedTags });
+			await loadConversations();
+			showToast('Tag added.', 'success');
+		} catch (err) {
+			showToast('Failed to add tag.', 'error');
+			console.error(err);
+		}
+	}
+
+	async function removeTag(tagKey: string) {
+		if (!selectedConv) return;
+		const currentTags = selectedConv.tags || [];
+		const updatedTags = currentTags.filter(t => t !== tagKey);
+		try {
+			selectedConv.tags = updatedTags;
+			await api.updateConversation(selectedConv.id, { tags: updatedTags });
+			await loadConversations();
+			showToast('Tag removed.', 'success');
+		} catch (err) {
+			showToast('Failed to remove tag.', 'error');
+			console.error(err);
+		}
+	}
+
+	async function updateCustomField(key: string, value: unknown) {
+		if (!selectedConv) return;
+		const updatedCf = { ...(selectedConv.custom_fields || {}), [key]: value };
+		try {
+			selectedConv.custom_fields = updatedCf;
+			await api.updateConversation(selectedConv.id, { custom_fields: updatedCf });
+			await loadConversations();
+			showToast('Field updated.', 'success');
+		} catch (err) {
+			showToast('Failed to update custom field.', 'error');
+			console.error(err);
+		}
 	}
 
 	function goBackToList() {
@@ -347,32 +463,137 @@
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 							</button>
 						</div>
-						<div class="info-section">
+						
+						<div class="info-section profile-section">
 							<div class="info-avatar-large">
 								{(selectedConv.name || 'U').charAt(0).toUpperCase()}
 							</div>
 							<h4>{selectedConv.name || `User ${selectedConv.sender_id.slice(0, 8)}`}</h4>
 							<p class="info-id">{selectedConv.sender_id}</p>
 						</div>
+
 						<div class="info-section">
-							<div class="info-row">
+							<h4 class="section-title">Details</h4>
+							<div class="info-form-group">
 								<span class="info-label">Status</span>
-								<span class="status-badge status-{selectedConv.status}">{selectedConv.status}</span>
+								<select 
+									class="status-select select-{selectedConv.status}" 
+									value={selectedConv.status} 
+									onchange={(e) => updateConvStatus((e.target as HTMLSelectElement).value)}
+								>
+									<option value="active">Active</option>
+									<option value="closed">Closed</option>
+								</select>
 							</div>
-							<div class="info-row">
-								<span class="info-label">Bot</span>
-								<span>{selectedConv.is_bot_enabled ? 'Enabled' : 'Disabled'}</span>
+
+							<div class="info-form-group toggle-group">
+								<span class="info-label">AI Chatbot</span>
+								<label class="switch-container">
+									<input 
+										type="checkbox" 
+										checked={selectedConv.is_bot_enabled} 
+										onchange={(e) => toggleBot((e.target as HTMLInputElement).checked)} 
+									/>
+									<span class="switch-slider"></span>
+								</label>
 							</div>
-							<div class="info-row">
-								<span class="info-label">Tags</span>
-								<div class="info-tags">
-									{#each selectedConv.tags || [] as tag}
-										<span class="tag-chip">{tag}</span>
-									{:else}
-										<span class="text-muted">None</span>
+						</div>
+
+						<div class="info-section">
+							<h4 class="section-title">Tags</h4>
+							<div class="info-tags-edit">
+								{#each selectedConv.tags || [] as tag}
+									<span class="tag-chip editable-tag">
+										{tag}
+										<button class="tag-delete-btn" onclick={() => removeTag(tag)} aria-label="Remove tag">×</button>
+									</span>
+								{:else}
+									<span class="text-muted" style="display:block; margin-bottom:8px;">No tags yet</span>
+								{/each}
+							</div>
+							{#if allTags.length > 0}
+								<div class="tag-select-wrapper">
+									<select 
+										class="tag-select" 
+										value="" 
+										onchange={(e) => { 
+											const val = (e.target as HTMLSelectElement).value; 
+											if (val) { addTag(val); (e.target as HTMLSelectElement).value = ''; } 
+										}}
+									>
+										<option value="" disabled selected>+ Add tag...</option>
+										{#each allTags.filter(t => !(selectedConv?.tags || []).includes(t.tag_key)) as tag}
+											<option value={tag.tag_key}>{tag.tag_label || tag.tag_key}</option>
+										{/each}
+									</select>
+								</div>
+							{/if}
+						</div>
+
+						<div class="info-section">
+							<h4 class="section-title">Notes</h4>
+							<div class="notes-wrapper">
+								<textarea 
+									class="notes-textarea" 
+									placeholder="Add notes about this customer..." 
+									bind:value={notesText}
+									onblur={saveNotes}
+								></textarea>
+								<div class="notes-footer">
+									<span class="notes-status-text">
+										{#if savingNotes}Saving...{:else}Saved on blur{/if}
+									</span>
+									<button 
+										class="btn-save-notes" 
+										onclick={saveNotes} 
+										disabled={savingNotes || notesText === (selectedConv.notes || '')}
+									>
+										Save
+									</button>
+								</div>
+							</div>
+						</div>
+
+						{#if conversationCustomFields.length > 0}
+							<div class="info-section">
+								<h4 class="section-title">Custom Fields</h4>
+								<div class="custom-fields-form">
+									{#each conversationCustomFields as cf}
+										<div class="custom-field-item">
+											<label class="custom-field-label">{cf.field_label || cf.field_key}</label>
+											{#if cf.field_type === 'dropdown'}
+												<select 
+													class="custom-field-select" 
+													value={String((selectedConv.custom_fields || {})[cf.field_key] || '')}
+													onchange={(e) => updateCustomField(cf.field_key, (e.target as HTMLSelectElement).value)}
+												>
+													<option value="">Select...</option>
+													{#each cf.field_options || [] as opt}
+														<option value={opt}>{opt}</option>
+													{/each}
+												</select>
+											{:else if cf.field_type === 'number'}
+												<input 
+													type="number" 
+													class="custom-field-input" 
+													value={Number((selectedConv.custom_fields || {})[cf.field_key] || 0)}
+													onchange={(e) => updateCustomField(cf.field_key, Number((e.target as HTMLInputElement).value))}
+												/>
+											{:else}
+												<input 
+													type="text" 
+													class="custom-field-input" 
+													value={String((selectedConv.custom_fields || {})[cf.field_key] || '')}
+													onchange={(e) => updateCustomField(cf.field_key, (e.target as HTMLInputElement).value)}
+												/>
+											{/if}
+										</div>
 									{/each}
 								</div>
 							</div>
+						{/if}
+
+						<div class="info-section metadata-section">
 							<div class="info-row">
 								<span class="info-label">Created</span>
 								<span>{new Date(selectedConv.created_at).toLocaleDateString()}</span>
@@ -681,19 +902,89 @@
 	}
 
 	.info-panel {
-		width: 280px; border-left: 1px solid var(--border); background: var(--surface);
-		overflow-y: auto; flex-shrink: 0;
+		width: 300px; border-left: 1px solid var(--border); background: var(--surface);
+		overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column;
 	}
 	.info-panel-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 	.info-panel-header h3 { font-size: 14px; font-weight: 600; }
 	.info-section { padding: 16px; border-bottom: 1px solid var(--border); }
+	.profile-section { display: flex; flex-direction: column; align-items: center; text-align: center; }
 	.info-avatar-large { width: 64px; height: 64px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 600; margin: 0 auto 12px; }
-	.info-section h4 { text-align: center; margin-bottom: 4px; }
-	.info-id { text-align: center; font-size: 12px; color: var(--text-secondary); }
-	.info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; }
+	.info-section h4.section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 0.5px; margin-bottom: 12px; text-align: left; }
+	.info-id { text-align: center; font-size: 12px; color: var(--text-secondary); word-break: break-all; }
+	.info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
 	.info-label { font-size: 12px; color: var(--text-secondary); }
-	.info-tags { display: flex; gap: 4px; flex-wrap: wrap; }
-	.tag-chip { font-size: 11px; padding: 1px 8px; border-radius: 8px; background: var(--accent-bg); color: var(--accent); }
+	
+	/* Interactive CRM Form elements */
+	.info-form-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+	.info-form-group.toggle-group { margin-bottom: 0; }
+	.status-select {
+		padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; border: 1px solid transparent; cursor: pointer; text-transform: uppercase; outline: none; transition: all 0.15s;
+	}
+	.status-select.select-active { background: var(--green-bg); color: var(--green); border-color: rgba(34, 197, 94, 0.2); }
+	.status-select.select-closed { background: var(--surface-hover); color: var(--text-secondary); border-color: var(--border); }
+	
+	/* Switch Toggle for AI Bot */
+	.switch-container { position: relative; display: inline-block; width: 40px; height: 20px; }
+	.switch-container input { opacity: 0; width: 0; height: 0; }
+	.switch-slider {
+		position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border);
+		transition: .2s; border-radius: 20px;
+	}
+	.switch-slider:before {
+		position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px;
+		background-color: white; transition: .2s; border-radius: 50%;
+	}
+	input:checked + .switch-slider { background-color: var(--accent); }
+	input:checked + .switch-slider:before { transform: translateX(20px); }
+
+	/* Tags Editing */
+	.info-tags-edit { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+	.tag-chip.editable-tag {
+		font-size: 11px; padding: 2px 6px 2px 10px; border-radius: 12px; background: var(--accent-bg); color: var(--accent);
+		display: inline-flex; align-items: center; gap: 4px;
+	}
+	.tag-delete-btn {
+		background: none; border: none; font-size: 14px; font-weight: bold; cursor: pointer; padding: 0 2px;
+		color: var(--accent); opacity: 0.6; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: opacity 0.15s;
+	}
+	.tag-delete-btn:hover { opacity: 1; color: var(--red); }
+	
+	.tag-select-wrapper { width: 100%; }
+	.tag-select {
+		width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-hover);
+		color: var(--text); font-size: 12px; cursor: pointer; outline: none;
+	}
+	.tag-select:focus { border-color: var(--accent); }
+
+	/* Notes Section */
+	.notes-wrapper { display: flex; flex-direction: column; gap: 6px; }
+	.notes-textarea {
+		width: 100%; min-height: 80px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+		background: var(--surface-hover); color: var(--text); font-size: 12px; font-family: inherit; resize: vertical; outline: none;
+	}
+	.notes-textarea:focus { border-color: var(--accent); background: var(--surface-active); }
+	.notes-footer { display: flex; justify-content: space-between; align-items: center; }
+	.notes-status-text { font-size: 10px; color: var(--text-tertiary); font-style: italic; }
+	.btn-save-notes {
+		padding: 4px 10px; font-size: 11px; font-weight: 500; border-radius: 6px; border: none;
+		background: var(--accent); color: white; cursor: pointer; transition: opacity 0.15s;
+	}
+	.btn-save-notes:disabled { opacity: 0.5; cursor: not-allowed; }
+
+	/* Custom Fields */
+	.custom-fields-form { display: flex; flex-direction: column; gap: 10px; }
+	.custom-field-item { display: flex; flex-direction: column; gap: 4px; }
+	.custom-field-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+	.custom-field-input, .custom-field-select {
+		padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-hover);
+		color: var(--text); font-size: 12px; outline: none; width: 100%;
+	}
+	.custom-field-input:focus, .custom-field-select:focus { border-color: var(--accent); background: var(--surface-active); }
+	
+	.metadata-section { padding-top: 8px; padding-bottom: 8px; border-bottom: none; font-size: 11px; color: var(--text-tertiary); }
+	.metadata-section .info-row { padding: 4px 0; }
+	.metadata-section .info-label { font-size: 11px; color: var(--text-tertiary); }
 
 	.quick-replies-panel { border-top: 1px solid var(--border); background: var(--surface); max-height: 200px; overflow-y: auto; }
 	.qr-header { padding: 8px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; }

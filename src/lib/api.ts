@@ -41,6 +41,7 @@ export const api = {
 
 	conversations: () => request<{ conversations: unknown[]; total: number }>('/conversations'),
 	conversation: (id: number) => request<Record<string, unknown>>(`/conversations/${id}`),
+	updateConversation: (id: number, data: unknown) => request<{ ok: boolean }>(`/conversations/${id}`, 'PUT', data),
 	messages: (convId: number) => request<{ messages: unknown[] }>(`/messages/${convId}`),
 	sendMessage: (senderId: string, text: string) => request<{ ok: boolean }>('/send-message', 'POST', { senderId, text }),
 

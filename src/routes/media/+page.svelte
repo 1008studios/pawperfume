@@ -139,7 +139,7 @@
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
 	title="Delete This Media?"
-	message="Ma-remove ito sa media library mo. Hindi na ito ma-undo."
+	message="This file will be removed from your media library. This action cannot be undone."
 	confirmText="Yes, Delete"
 	cancelText="Cancel"
 	variant="danger"

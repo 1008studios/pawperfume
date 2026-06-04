@@ -131,7 +131,7 @@
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
 	title="Delete This Entry?"
-	message="Ma-remove ito sa finance records mo. Hindi na ito ma-undo."
+	message="This entry will be removed from your financial records. This action cannot be undone."
 	confirmText="Yes, Delete"
 	cancelText="Cancel"
 	variant="danger"

@@ -92,7 +92,7 @@
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
 	title="Delete This Automation?"
-	message="Ma-remove ito at hindi na auto-rereply ang bot sa keyword na ito. Pwede mo naman i-recreate anytime."
+	message="This automation will be deleted and the bot will no longer auto-reply to this trigger. You can recreate it at any time."
 	confirmText="Yes, Delete"
 	cancelText="Cancel"
 	variant="danger"
