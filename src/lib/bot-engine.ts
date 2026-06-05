@@ -183,7 +183,6 @@ async function getAiResponse(prompt: string, systemPrompt: string, language: str
 }
 
 async function matchFaq(db: DbFn, message: string): Promise<string | null> {
-	// FIX: Parameterized query
 	const faqs = await db('SELECT * FROM faqs WHERE tenant_id = $1 ORDER BY sort_order', [1]);
 	const lower = message.toLowerCase();
 
@@ -201,6 +200,34 @@ async function matchFaq(db: DbFn, message: string): Promise<string | null> {
 		}
 	}
 	return null;
+}
+
+// RAG-powered FAQ matching using AI + keyword scoring for better results
+async function matchFaqAi(db: DbFn, message: string): Promise<string | null> {
+	const faqs = await db('SELECT * FROM faqs WHERE tenant_id = $1 ORDER BY sort_order', [1]);
+	if (!faqs || faqs.length === 0) return null;
+	
+	// Build a prompt with all FAQs and let AI pick the best match
+	const faqList = faqs.map((f: Record<string, unknown>) => 
+		`Q: ${f.question}\nA: ${f.answer}\nKeywords: ${f.keywords || ''}`
+	).join('\n\n');
+	
+	try {
+		const aiResponse = await getAiResponse(
+			`FAQ Database:\n${faqList}\n\nCustomer question: "${message}"\n\nBest matching answer (or NO_MATCH):`,
+			'You are a helpful FAQ bot for a perfume business. Given the customer question and the FAQ database below, find the best matching answer. If no FAQ matches well, return "NO_MATCH". Return ONLY the answer text, nothing else.',
+			'en'
+		);
+		
+		if (aiResponse && aiResponse !== 'NO_MATCH') {
+			return aiResponse.trim();
+		}
+	} catch (err) {
+		console.error('AI FAQ matching error:', err);
+	}
+	
+	// Fallback: keyword matching
+	return matchFaq(db, message);
 }
 
 async function matchAutomation(db: DbFn, message: string): Promise<string | null> {
@@ -266,15 +293,63 @@ async function processBotFlow(
 				collectedData[String(step.input_variable)] = message;
 			}
 
+			// Determine next step key — support button_choice routing
+			let nextStepKey: string | null = null;
+			const stepType = String(step.step_type || '');
+			
+			if (stepType === 'button_choice') {
+				const choices = (step.button_choices || []) as Array<{ label: string; next_step: string }>;
+				if (Array.isArray(choices) && choices.length > 0) {
+					const matchedChoice = choices.find(c => 
+						c.label && c.label.toLowerCase().trim() === message.toLowerCase().trim()
+					);
+					nextStepKey = matchedChoice?.next_step || String(step.next_step || '');
+				} else {
+					nextStepKey = String(step.next_step || '');
+				}
+			} else if (stepType === 'ai_decision') {
+				// AI decision step: use AI to classify input and route
+				const aiPrompt = String(step.ai_prompt || '');
+				const aiContext = String(step.ai_context || '');
+				
+				if (aiContext === 'faq') {
+					// RAG: search FAQs for best match
+					const faqAnswer = await matchFaqAi(db, message);
+					if (faqAnswer) {
+						await saveBotMessage(db, conv.id, faqAnswer);
+						await sendFacebookMessage(senderId, faqAnswer);
+					}
+				}
+				
+				// AI classification for routing
+				const aiResponse = await getAiResponse(
+					`Customer message: "${message}"\n\nWhich step should we route to? Reply ONLY with the step key:`,
+					`You are a conversation router. Based on the customer's message, choose the next step. Reply with ONLY the step key, nothing else. Valid steps: ${steps.map((s: Record<string, unknown>) => s.step_key).join(', ')}`,
+					'en'
+				);
+				
+				const cleanedResponse = (aiResponse || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+				const matchedStep = steps.find((s: Record<string, unknown>) => 
+					String(s.step_key || '').toLowerCase() === cleanedResponse
+				);
+				nextStepKey = matchedStep ? String(matchedStep.step_key) : String(step.next_step || '');
+				
+				// Store AI response
+				if (step.input_variable) {
+					collectedData[String(step.input_variable)] = aiResponse || '';
+				}
+			} else {
+				nextStepKey = String(step.next_step || '');
+			}
+
 			// Move to next step
-			const nextStep = step.next_step;
-			if (nextStep) {
-				const nextStepDef = steps.find((s: Record<string, unknown>) => s.step_key === nextStep);
+			if (nextStepKey) {
+				const nextStepDef = steps.find((s: Record<string, unknown>) => s.step_key === nextStepKey);
 				if (nextStepDef) {
 					// FIX: Parameterized query
 					await db(
 						'UPDATE bot_flow_state SET current_step = $1, collected_data = $2 WHERE conversation_id = $3',
-						[nextStep, JSON.stringify(collectedData), conv.id]
+						[nextStepKey, JSON.stringify(collectedData), conv.id]
 					);
 					
 					const promptMsg = String(nextStepDef.prompt_message || '');
@@ -291,7 +366,7 @@ async function processBotFlow(
 					}
 					return true;
 				} else {
-					console.warn('Next step not found:', nextStep);
+					console.warn('Next step not found:', nextStepKey);
 				}
 			}
 
@@ -381,9 +456,9 @@ export async function processIncomingMessage(db: DbFn, conv: Conversation, messa
 		console.error('Bot flow error:', err);
 	}
 
-	// 3. Match FAQ
+	// 3. Match FAQ (try AI RAG first, fallback to keyword matching)
 	try {
-		const faqAnswer = await matchFaq(db, truncatedMessage);
+		const faqAnswer = await matchFaqAi(db, truncatedMessage);
 		if (faqAnswer) {
 			await saveBotMessage(db, conv.id, faqAnswer);
 			await sendFacebookMessage(senderId, faqAnswer);

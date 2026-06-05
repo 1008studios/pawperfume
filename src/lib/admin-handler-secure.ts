@@ -477,7 +477,9 @@ export async function handleAdmin(path: string, method: string, request: Request
 				nextStep: 'next_step', next_step: 'next_step',
 				inputVariable: 'input_variable', input_variable: 'input_variable',
 				sortOrder: 'sort_order', sort_order: 'sort_order',
-				buttonChoices: 'button_choices', button_choices: 'button_choices'
+				buttonChoices: 'button_choices', button_choices: 'button_choices',
+				imageUrl: 'image_url', image_url: 'image_url',
+				carouselItems: 'carousel_items', carousel_items: 'carousel_items'
 			};
 			
 			for (const [bodyKey, dbCol] of Object.entries(fieldMap)) {
@@ -723,11 +725,21 @@ export async function handleAdmin(path: string, method: string, request: Request
 					break;
 				}
 				case 'bot-flow': {
-					if (!body.stepKey) return json({ error: 'stepKey required' }, { status: 400 });
+					const stepKey = (body.stepKey || body.step_key || '') as string;
+					if (!stepKey) return json({ error: 'stepKey required' }, { status: 400 });
+					const stepType = (body.stepType || body.step_type || 'text_input') as string;
+					const promptMsg = (body.promptMessage || body.prompt_message || '') as string;
+					const nextStep = (body.nextStep || body.next_step || '') as string;
+					const inputVar = (body.inputVariable || body.input_variable || '') as string;
+					const sortOrder = Number(body.sortOrder ?? body.sort_order ?? 99);
+					const stepLabel = (body.stepLabel || body.step_label || '') as string;
+					const buttonChoices = body.buttonChoices || body.button_choices || [];
+					const imageUrl = (body.imageUrl || body.image_url || '') as string;
+					const carouselItems = body.carouselItems || body.carousel_items || [];
 					await db(
-						`INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, button_choices, next_step, input_variable, sort_order) 
-						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-						[1, body.stepKey, body.stepLabel || '', body.stepType || 'text_input', body.promptMessage || '', JSON.stringify(body.buttonChoices || []), body.nextStep || '', body.inputVariable || '', Number(body.sortOrder) || 99]
+						`INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, button_choices, next_step, input_variable, sort_order, image_url, carousel_items) 
+						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+						[1, stepKey, stepLabel, stepType, promptMsg, JSON.stringify(buttonChoices), nextStep, inputVar, sortOrder, imageUrl, JSON.stringify(carouselItems)]
 					);
 					break;
 				}
