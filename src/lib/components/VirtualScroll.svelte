@@ -1,18 +1,21 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		items: any[];
 		itemHeight: number;
 		containerHeight: number;
 		overscan?: number; // Number of items to render above/below viewport
+		children?: Snippet<[{ item: any; index: number }]>;
 	}
 
 	let { 
 		items, 
 		itemHeight, 
 		containerHeight,
-		overscan = 5 
+		overscan = 5,
+		children
 	}: Props = $props();
 
 	let container: HTMLDivElement;
@@ -66,7 +69,9 @@
 		<div class="virtual-scroll-viewport" style="transform: translateY({offsetY()}px);">
 			{#each visibleItems() as item, i (startIndex() + i)}
 				<div class="virtual-scroll-item" style="height: {itemHeight}px;">
-					<slot {item} index={startIndex() + i} />
+					{#if children}
+						{@render children({ item, index: startIndex() + i })}
+					{/if}
 				</div>
 			{/each}
 		</div>

@@ -1,15 +1,32 @@
 import type { RequestHandler } from './$types';
 import { handleAdmin } from '$lib/admin-handler-secure';
 import { json } from '@sveltejs/kit';
-import { getAdminPassword } from '$lib/auth';
+import { getAdminPassword, validateSession } from '$lib/auth';
 
 // Special handler for multipart uploads (Vercel Blob)
 async function handleUploadBlob(request: Request, headers: Headers) {
 	const pass = getAdminPassword();
 	if (pass) {
 		const token = (headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-		const base64Pass = Buffer.from(pass).toString('base64');
-		if (token !== pass && token !== base64Pass) {
+		const ip = headers.get('x-forwarded-for') || headers.get('x-real-ip') || 'unknown';
+		let authorized = false;
+		
+		if (validateSession(token, ip)) {
+			authorized = true;
+		}
+		
+		if (!authorized) {
+			try {
+				const decoded = Buffer.from(token, 'base64').toString();
+				if (decoded === pass) authorized = true;
+			} catch {}
+		}
+		
+		if (!authorized && token === pass) {
+			authorized = true;
+		}
+		
+		if (!authorized) {
 			return json({ error: 'Unauthorized' }, { status: 401 });
 		}
 	}

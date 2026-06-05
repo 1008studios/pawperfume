@@ -42,12 +42,15 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-	<div class="context-menu-backdrop" onclick={() => dispatch('close')} role="presentation">
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div class="context-menu-backdrop" onclick={() => dispatch('close')} onkeydown={(e) => e.key === 'Escape' && dispatch('close')} role="button" tabindex="-1" aria-label="Close context menu">
 		<div 
 			class="context-menu"
 			style="left: {position.x}px; top: {position.y}px;"
 			onclick={(e) => e.stopPropagation()}
 			role="menu"
+			tabindex="-1"
 		>
 			{#each items as item}
 				{#if item.divider}

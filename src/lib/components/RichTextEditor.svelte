@@ -163,15 +163,17 @@
 					class="toolbar-button" 
 					onclick={insertLink}
 					title="Insert Link"
+					aria-label="Insert Link"
 				>
-					
+					🔗
 				</button>
 				<button 
 					class="toolbar-button" 
 					onclick={insertImage}
 					title="Insert Image"
+					aria-label="Insert Image"
 				>
-					
+					🖼️
 				</button>
 			</div>
 
@@ -203,6 +205,10 @@
 		{placeholder}
 		oninput={updateValue}
 		onkeydown={handleKeydown}
+		role="textbox"
+		tabindex="0"
+		aria-multiline="true"
+		aria-label="Rich text editor content"
 	></div>
 </div>
 
@@ -286,25 +292,25 @@
 		background: var(--surface-hover);
 	}
 
-	.editor-content h1 {
+	.editor-content :global(h1) {
 		font-size: 24px;
 		font-weight: 700;
 		margin: 16px 0 8px;
 	}
 
-	.editor-content h2 {
+	.editor-content :global(h2) {
 		font-size: 20px;
 		font-weight: 600;
 		margin: 14px 0 6px;
 	}
 
-	.editor-content h3 {
+	.editor-content :global(h3) {
 		font-size: 16px;
 		font-weight: 600;
 		margin: 12px 0 4px;
 	}
 
-	.editor-content blockquote {
+	.editor-content :global(blockquote) {
 		border-left: 3px solid var(--primary);
 		padding-left: 16px;
 		margin: 12px 0;
@@ -312,22 +318,22 @@
 		font-style: italic;
 	}
 
-	.editor-content ul,
-	.editor-content ol {
+	.editor-content :global(ul),
+	.editor-content :global(ol) {
 		padding-left: 24px;
 		margin: 8px 0;
 	}
 
-	.editor-content li {
+	.editor-content :global(li) {
 		margin: 4px 0;
 	}
 
-	.editor-content a {
+	.editor-content :global(a) {
 		color: var(--primary);
 		text-decoration: underline;
 	}
 
-	.editor-content img {
+	.editor-content :global(img) {
 		max-width: 100%;
 		height: auto;
 		border-radius: 4px;

@@ -28,6 +28,8 @@
 		export: '#f59e0b'
 	};
 
+	let expandedLogId = $state<string | null>(null);
+
 	let filteredLogs = $derived(() => {
 		return logs.filter(log => {
 			if (filterAction && log.action !== filterAction) return false;
@@ -53,6 +55,10 @@
 	function clearFilters() {
 		filterAction = '';
 		filterUser = '';
+	}
+
+	function toggleDetails(id: string) {
+		expandedLogId = expandedLogId === id ? null : id;
 	}
 </script>
 
@@ -107,15 +113,14 @@
 						</td>
 						<td class="details">
 							{#if log.details}
-								<button class="details-toggle" onclick={(e) => {
-									const el = e.currentTarget.nextElementSibling;
-									el?.classList.toggle('show');
-								}}>
-									View
+								<button class="details-toggle" onclick={() => toggleDetails(log.id)}>
+									{expandedLogId === log.id ? 'Hide' : 'View'}
 								</button>
-								<div class="details-content">
-									<pre>{JSON.stringify(log.details, null, 2)}</pre>
-								</div>
+								{#if expandedLogId === log.id}
+									<div class="details-content">
+										<pre>{JSON.stringify(log.details, null, 2)}</pre>
+									</div>
+								{/if}
 							{:else}
 								<span class="no-details">—</span>
 							{/if}
@@ -254,7 +259,7 @@
 	}
 
 	.details-content {
-		display: none;
+		display: block;
 		position: absolute;
 		top: 100%;
 		right: 0;
@@ -265,10 +270,6 @@
 		box-shadow: var(--shadow);
 		max-width: 400px;
 		z-index: 10;
-	}
-
-	.details-content.show {
-		display: block;
 	}
 
 	.details-content pre {

@@ -92,11 +92,11 @@
 	<button class="picker-input" onclick={togglePicker}>
 		<span class="input-icon">
 			{#if type === 'date'}
-				
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
 			{:else if type === 'time'}
-				
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
 			{:else}
-				
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><circle cx="17" cy="17" r="4"></circle><polyline points="17 15 17 17 19 17"></polyline></svg>
 			{/if}
 		</span>
 		<span class="input-value">
@@ -109,11 +109,11 @@
 		<div class="picker-dropdown">
 			<div class="calendar">
 				<div class="calendar-header">
-					<button class="nav-button" onclick={previousMonth}></button>
+					<button class="nav-button" onclick={previousMonth} aria-label="Previous month">◀</button>
 					<div class="month-year">
 						{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
 					</div>
-					<button class="nav-button" onclick={nextMonth}></button>
+					<button class="nav-button" onclick={nextMonth} aria-label="Next month">▶</button>
 				</div>
 
 				<div class="calendar-days">

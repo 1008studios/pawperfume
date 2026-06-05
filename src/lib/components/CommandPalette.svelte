@@ -103,10 +103,20 @@
 		}
 	}
 
+	let inputEl = $state<HTMLInputElement | null>(null);
+
 	// Reset selection when search changes
 	$effect(() => {
 		if (searchQuery) {
 			selectedIndex = 0;
+		}
+	});
+
+	$effect(() => {
+		if (open) {
+			setTimeout(() => {
+				inputEl?.focus();
+			}, 50);
 		}
 	});
 
@@ -125,16 +135,18 @@
 </script>
 
 {#if open}
-	<div class="command-palette-overlay" onclick={close} role="presentation">
-		<div class="command-palette" onclick={(e) => e.stopPropagation()} role="dialog">
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div class="command-palette-overlay" onclick={close} onkeydown={(e) => e.key === 'Escape' && close()} role="button" tabindex="-1" aria-label="Close command palette">
+		<div class="command-palette" onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1" aria-modal="true" aria-label="Command palette">
 			<div class="command-palette-header">
 				<input
 					type="text"
+					bind:this={inputEl}
 					bind:value={searchQuery}
 					onkeydown={handleKeydown}
 					{placeholder}
 					class="command-palette-input"
-					autofocus
 				/>
 				<kbd class="kbd">ESC</kbd>
 			</div>

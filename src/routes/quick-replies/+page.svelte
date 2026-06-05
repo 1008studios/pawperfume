@@ -4,6 +4,8 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { QuickReply } from '$lib/types';
 	import InlineEdit from '$lib/components/InlineEdit.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	let quickReplies = $state<QuickReply[]>([]);
 	let loading = $state(true);
@@ -114,7 +116,14 @@
 	</header>
 
 	{#if loading}
-		<div class="loading-state">Loading...</div>
+		<div class="card-list">
+			{#each Array(4) as _}
+				<div class="card" style="flex-direction: column; gap: 10px;">
+					<Skeleton width="30%" height="20px" />
+					<Skeleton width="100%" height="16px" count={2} />
+				</div>
+			{/each}
+		</div>
 	{:else}
 		<div class="card-list">
 			{#each quickReplies as reply}
@@ -159,10 +168,13 @@
 					</div>
 				</div>
 			{:else}
-				<div class="empty-state">
-					<div class="empty-icon"></div>
-					<p>No quick replies yet</p>
-				</div>
+				<EmptyState
+					title="No Quick Replies yet"
+					description="Create canned responses for common questions so you can reply to customers with a single click."
+					iconType="reply"
+					actionText="Create Quick Reply"
+					onAction={openNewReply}
+				/>
 			{/each}
 		</div>
 	{/if}

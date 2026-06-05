@@ -115,6 +115,7 @@
 			role="combobox"
 			aria-expanded={isOpen}
 			aria-autocomplete="list"
+			aria-controls="autocomplete-dropdown"
 		/>
 
 		{#if isLoading}
@@ -133,7 +134,7 @@
 	</div>
 
 	{#if isOpen}
-		<div class="dropdown" role="listbox">
+		<div id="autocomplete-dropdown" class="dropdown" role="listbox">
 			{#each filteredOptions as option, index}
 				<button
 					class="option"

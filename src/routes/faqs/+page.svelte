@@ -4,6 +4,8 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { Faq } from '$lib/types';
 	import InlineEdit from '$lib/components/InlineEdit.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	let faqs = $state<Faq[]>([]);
 	let loading = $state(true);
@@ -22,7 +24,7 @@
 		try {
 			faqs = await api.faqs() as Faq[];
 		} catch (err) {
-			showToast('Could not load FAQs. Please try again.', 'error');
+			showToast('Could not load FAQs. Please refresh the page.', 'error');
 		} finally {
 			loading = false;
 		}
@@ -42,7 +44,7 @@
 			newFaq = { question: '', answer: '', keywords: '' };
 			await loadFaqs();
 		} catch (err) {
-			showToast('Could not save FAQ. Check your fields and try again.', 'error');
+			showToast('Could not save FAQ. Please try again.', 'error');
 		}
 	}
 
@@ -70,7 +72,7 @@
 			showToast('FAQ deleted.', 'success');
 			await loadFaqs();
 		} catch (err) {
-			showToast('Could not delete. Please try again.', 'error');
+			showToast('Could not delete FAQ. Please try again.', 'error');
 		} finally {
 			showDeleteConfirm = false;
 			deletingId = null;
@@ -80,10 +82,10 @@
 	async function updateFaqField(id: number, fields: Partial<Faq>) {
 		try {
 			await api.updateFaq(id, fields);
-			showToast('FAQ updated.', 'success');
+			showToast('FAQ updated! ✓', 'success');
 			await loadFaqs();
 		} catch {
-			showToast('Failed to update FAQ.', 'error');
+			showToast('Could not update FAQ. Please try again.', 'error');
 			throw new Error('Save failed');
 		}
 	}
@@ -92,7 +94,7 @@
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
 	title="Delete This FAQ?"
-	message="Your bot will no longer use this FAQ to answer customers, but you can add it back anytime."
+	message="The AI bot will no longer use this FAQ to answer customer inquiries."
 	confirmText="Yes, Delete"
 	cancelText="Cancel"
 	variant="danger"
@@ -109,7 +111,15 @@
 	</header>
 
 	{#if loading}
-		<div class="loading-state">Loading...</div>
+		<div class="card-list">
+			{#each Array(4) as _}
+				<div class="card" style="flex-direction: column; gap: 10px;">
+					<Skeleton width="40%" height="20px" />
+					<Skeleton width="90%" height="16px" />
+					<Skeleton width="25%" height="14px" />
+				</div>
+			{/each}
+		</div>
 	{:else}
 		<div class="card-list">
 			{#each faqs as faq}
@@ -169,10 +179,13 @@
 					</div>
 				</div>
 			{:else}
-				<div class="empty-state">
-					<div class="empty-icon"></div>
-					<p>No FAQs yet</p>
-				</div>
+				<EmptyState
+					title="No FAQs yet — let's train the bot! 📚"
+					description="Add questions customers frequently ask (e.g., 'How much is shipping?' or 'Where is your shop?'). The AI will use these to respond instantly."
+					iconType="faq"
+					actionText="+ Add FAQ"
+					onAction={openNewFaq}
+				/>
 			{/each}
 		</div>
 	{/if}

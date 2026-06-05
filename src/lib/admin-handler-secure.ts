@@ -1,5 +1,5 @@
 import { getDb } from '$lib/db';
-import { getAdminPassword } from '$lib/auth';
+import { getAdminPassword, createSession, validateSession, checkLoginRateLimit, recordLoginAttempt, clearLoginAttempts } from '$lib/auth';
 import { json } from '@sveltejs/kit';
 import { extractReceiptData } from '$lib/bot-engine';
 
@@ -71,8 +71,27 @@ export async function handleAdmin(path: string, method: string, request: Request
 	const pass = getAdminPassword();
 	if (pass && !['login', 'status', 'tenant-config'].includes(route)) {
 		const token = (headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-		const base64Pass = Buffer.from(pass).toString('base64');
-		if (token !== pass && token !== base64Pass) {
+		let authorized = false;
+		
+		// Check session token
+		if (validateSession(token, clientIp)) {
+			authorized = true;
+		}
+		
+		// Legacy: base64-encoded password
+		if (!authorized) {
+			try {
+				const decoded = Buffer.from(token, 'base64').toString();
+				if (decoded === pass) authorized = true;
+			} catch {}
+		}
+		
+		// Legacy: raw password (will be phased out)
+		if (!authorized && token === pass) {
+			authorized = true;
+		}
+		
+		if (!authorized) {
 			return json({ error: 'Unauthorized' }, { status: 401 });
 		}
 	}
@@ -81,18 +100,25 @@ export async function handleAdmin(path: string, method: string, request: Request
 		switch (route) {
 			case 'login': {
 				if (method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
-				// Rate limit login attempts more aggressively
-				if (!checkRateLimit(`login:${clientIp}`, 5, 300000)) {
-					return json({ error: 'Too many login attempts. Try again in 5 minutes.' }, { status: 429 });
+				
+				const rateCheck = checkLoginRateLimit(clientIp);
+				if (!rateCheck.allowed) {
+					return json({ 
+						error: `Too many login attempts. Try again in ${Math.ceil((rateCheck.retryAfter || 0) / 60)} minutes.` 
+					}, { status: 429 });
 				}
+				
 				if (!body.password || typeof body.password !== 'string') {
 					return json({ error: 'Password required' }, { status: 400 });
 				}
-				// SECURITY FIX: Don't return password as token
+				
 				if (body.password === pass) {
-					// In production, generate a proper JWT token
-					return json({ ok: true, token: Buffer.from(pass).toString('base64') });
+					clearLoginAttempts(clientIp);
+					const sessionToken = createSession(clientIp);
+					return json({ ok: true, token: sessionToken });
 				}
+				
+				recordLoginAttempt(clientIp);
 				return json({ error: 'Invalid password' }, { status: 401 });
 			}
 

@@ -4,6 +4,8 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { Tag } from '$lib/types';
 	import InlineEdit from '$lib/components/InlineEdit.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	let tags = $state<Tag[]>([]);
 	let loading = $state(true);
@@ -109,7 +111,14 @@
 	</header>
 
 	{#if loading}
-		<div class="loading-state">Loading...</div>
+		<div class="tags-grid">
+			{#each Array(6) as _}
+				<div class="tag-card" style="min-width: 180px; gap: 8px;">
+					<Skeleton width="24px" height="24px" borderRadius="50%" />
+					<Skeleton width="100px" height="28px" borderRadius="14px" />
+				</div>
+			{/each}
+		</div>
 	{:else}
 		<div class="tags-grid">
 			{#each tags as tag}
@@ -149,10 +158,13 @@
 					</div>
 				</div>
 			{:else}
-				<div class="empty-state">
-					<div class="empty-icon"></div>
-					<p>No tags yet</p>
-				</div>
+				<EmptyState
+					title="No Tags yet"
+					description="Organize customers, automations, or chats with colorful visual classification tags."
+					iconType="tag"
+					actionText="Create Tag"
+					onAction={openNewTag}
+				/>
 			{/each}
 		</div>
 	{/if}

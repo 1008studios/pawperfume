@@ -1,16 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		selector: string;
 		offset?: number;
 		smooth?: boolean;
+		children?: Snippet<[{ activeSection: string; scrollToSection: (id: string) => void }]>;
 	}
 
 	let { 
 		selector,
 		offset = 80,
-		smooth = true
+		smooth = true,
+		children
 	}: Props = $props();
 
 	let activeSection = $state('');
@@ -56,7 +59,9 @@
 </script>
 
 <nav class="scroll-spy">
-	<slot {activeSection} {scrollToSection} />
+	{#if children}
+		{@render children({ activeSection, scrollToSection })}
+	{/if}
 </nav>
 
 <style>

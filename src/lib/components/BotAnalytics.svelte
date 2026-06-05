@@ -29,7 +29,7 @@
 		botPerformance
 	}: Props = $props();
 
-	const metrics: MetricCard[] = [
+	let metrics = $derived<MetricCard[]>([
 		{
 			label: 'Total Conversations',
 			value: totalConversations,
@@ -66,7 +66,7 @@
 			icon: '',
 			color: '#f59e0b'
 		}
-	];
+	]);
 </script>
 
 <div class="bot-analytics">

@@ -63,11 +63,13 @@
 </script>
 
 {#if open}
-	<div class="modal-overlay" onclick={() => dispatch('close')} role="presentation">
-		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog">
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div class="modal-overlay" onclick={() => dispatch('close')} onkeydown={(e) => e.key === 'Escape' && dispatch('close')} role="button" tabindex="-1" aria-label="Close order templates modal">
+		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog" tabindex="-1" aria-modal="true" aria-label="Order templates">
 			<div class="modal-header">
 				<h2>Order Templates</h2>
-				<button class="btn-icon" onclick={() => dispatch('close')}></button>
+				<button class="btn-icon" onclick={() => dispatch('close')} aria-label="Close dialog">×</button>
 			</div>
 
 			<div class="modal-body">
@@ -81,8 +83,9 @@
 										class="btn-icon danger" 
 										onclick={() => deleteTemplate(template.id)}
 										aria-label="Delete template"
+										title="Delete template"
 									>
-										
+										×
 									</button>
 								</div>
 								<div class="template-preview">
@@ -108,8 +111,9 @@
 				{:else}
 					<form class="create-form" onsubmit={(e) => { e.preventDefault(); createTemplate(); }}>
 						<div class="form-group">
-							<label>Template Name *</label>
+							<label for="template-name-input">Template Name *</label>
 							<input 
+								id="template-name-input"
 								type="text" 
 								bind:value={newTemplate.name}
 								placeholder="e.g., Standard Perfume Order"
@@ -118,8 +122,9 @@
 						</div>
 
 						<div class="form-group">
-							<label>Default Customer Name</label>
+							<label for="template-cust-input">Default Customer Name</label>
 							<input 
+								id="template-cust-input"
 								type="text" 
 								bind:value={newTemplate.customer_name}
 								placeholder="Leave blank to fill later"
@@ -128,8 +133,9 @@
 
 						<div class="form-row">
 							<div class="form-group">
-								<label>Default Amount (₱)</label>
+								<label for="template-amount-input">Default Amount (₱)</label>
 								<input 
+									id="template-amount-input"
 									type="number" 
 									bind:value={newTemplate.amount}
 									placeholder="0"
@@ -139,8 +145,8 @@
 							</div>
 
 							<div class="form-group">
-								<label>Default Status</label>
-								<select bind:value={newTemplate.status}>
+								<label for="template-status-select">Default Status</label>
+								<select id="template-status-select" bind:value={newTemplate.status}>
 									<option value="new">New</option>
 									<option value="processing">Processing</option>
 									<option value="completed">Completed</option>
@@ -149,8 +155,8 @@
 						</div>
 
 						<div class="form-group">
-							<label>Default Payment Status</label>
-							<select bind:value={newTemplate.payment_status}>
+							<label for="template-payment-select">Default Payment Status</label>
+							<select id="template-payment-select" bind:value={newTemplate.payment_status}>
 								<option value="pending">Pending</option>
 								<option value="paid">Paid</option>
 								<option value="refunded">Refunded</option>
@@ -158,8 +164,9 @@
 						</div>
 
 						<div class="form-group">
-							<label>Default Notes</label>
+							<label for="template-notes-textarea">Default Notes</label>
 							<textarea 
+								id="template-notes-textarea"
 								bind:value={newTemplate.notes}
 								placeholder="Any default notes for this template"
 								rows="3"

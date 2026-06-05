@@ -95,6 +95,44 @@
 		return canvas.toDataURL('image/png');
 	}
 
+	function handleKeyDown(e: KeyboardEvent) {
+		const step = e.shiftKey ? 10 : 2;
+		if (e.key === 'ArrowLeft') {
+			cropX = Math.max(0, cropX - step);
+			e.preventDefault();
+		} else if (e.key === 'ArrowRight') {
+			cropX = Math.min(imageWidth - cropWidth, cropX + step);
+			e.preventDefault();
+		} else if (e.key === 'ArrowUp') {
+			cropY = Math.max(0, cropY - step);
+			e.preventDefault();
+		} else if (e.key === 'ArrowDown') {
+			cropY = Math.min(imageHeight - cropHeight, cropY + step);
+			e.preventDefault();
+		}
+	}
+
+	function handleResizeKeyDown(e: KeyboardEvent) {
+		const step = e.shiftKey ? 10 : 2;
+		if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+			const newWidth = Math.max(minWidth, cropWidth - step);
+			const newHeight = newWidth / aspectRatio;
+			if (cropX + newWidth <= imageWidth && cropY + newHeight <= imageHeight) {
+				cropWidth = newWidth;
+				cropHeight = newHeight;
+			}
+			e.preventDefault();
+		} else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+			const newWidth = Math.min(imageWidth - cropX, cropWidth + step);
+			const newHeight = newWidth / aspectRatio;
+			if (cropY + newHeight <= imageHeight) {
+				cropWidth = newWidth;
+				cropHeight = newHeight;
+			}
+			e.preventDefault();
+		}
+	}
+
 	function applyCrop() {
 		const croppedDataUrl = getCroppedImage();
 		dispatch('crop', {
@@ -137,9 +175,26 @@
 			class="crop-area"
 			style="left: {cropX}px; top: {cropY}px; width: {cropWidth}px; height: {cropHeight}px;"
 			onmousedown={handleMouseDown}
+			onkeydown={handleKeyDown}
+			role="slider"
+			aria-label="Crop area position. Use Arrow keys to move."
+			aria-valuenow={cropX}
+			aria-valuemin="0"
+			aria-valuemax={imageWidth - cropWidth}
+			tabindex="0"
 		>
 			<div class="crop-grid"></div>
-			<div class="resize-handle" onmousedown={handleResizeMouseDown}></div>
+			<div 
+				class="resize-handle" 
+				onmousedown={handleResizeMouseDown}
+				onkeydown={handleResizeKeyDown}
+				role="slider"
+				aria-label="Crop size resize handle. Use Arrow keys to scale."
+				aria-valuenow={cropWidth}
+				aria-valuemin={minWidth}
+				aria-valuemax={imageWidth - cropX}
+				tabindex="0"
+			></div>
 		</div>
 	</div>
 

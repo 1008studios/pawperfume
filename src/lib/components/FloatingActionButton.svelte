@@ -56,11 +56,7 @@
 			aria-label={expanded ? 'Close menu' : 'Open menu'}
 		>
 			<span class="fab-icon">
-				{#if expanded}
-					
-				{:else}
-					+
-				{/if}
+				+
 			</span>
 		</button>
 	{/if}

@@ -354,7 +354,7 @@
 		border-radius: 8px;
 	}
 
-	.original-message label {
+	.original-message-title {
 		display: block;
 		font-size: 12px;
 		font-weight: 600;

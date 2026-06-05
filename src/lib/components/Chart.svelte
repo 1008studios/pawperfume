@@ -322,10 +322,10 @@
 		font-weight: 600;
 	}
 
-	.animate rect,
-	.animate polyline,
-	.animate path,
-	.animate circle {
+	rect.animate,
+	polyline.animate,
+	path.animate,
+	circle.animate {
 		animation: fadeIn 0.6s ease-out;
 	}
 

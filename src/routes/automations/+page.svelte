@@ -4,6 +4,8 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { Automation } from '$lib/types';
 	import InlineEdit from '$lib/components/InlineEdit.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	let automations = $state<Automation[]>([]);
 	let loading = $state(true);
@@ -113,7 +115,17 @@
 	</header>
 
 	{#if loading}
-		<div class="loading-state">Loading...</div>
+		<div class="card-list">
+			{#each Array(4) as _}
+				<div class="card" style="flex-direction: column; gap: 10px;">
+					<Skeleton width="40%" height="20px" />
+					<div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+						<Skeleton width="100px" height="32px" />
+						<Skeleton width="200px" height="32px" />
+					</div>
+				</div>
+			{/each}
+		</div>
 	{:else}
 		<div class="card-list">
 			{#each automations as auto}
@@ -166,10 +178,13 @@
 					</div>
 				</div>
 			{:else}
-				<div class="empty-state">
-					<div class="empty-icon"></div>
-					<p>No automations yet</p>
-				</div>
+				<EmptyState
+					title="No Automations yet"
+					description="Configure custom triggers to automate chat flows, routing patterns, or tags automatically."
+					iconType="automation"
+					actionText="Create Automation"
+					onAction={openNewAutomation}
+				/>
 			{/each}
 		</div>
 	{/if}
@@ -222,20 +237,9 @@
 		background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; gap: 16px; 
 		transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
 	}
-	.card.clickable-card { cursor: pointer; }
-	.card.clickable-card:hover {
-		transform: translateY(-2px);
-		border-color: var(--accent);
-		box-shadow: var(--shadow-lg);
-	}
-	.card.clickable-card:active {
-		transform: translateY(0);
-	}
 	.card-content { flex: 1; }
 	.card-label { font-weight: 600; margin-bottom: 8px; }
 	.card-trigger { display: flex; gap: 8px; align-items: center; }
-	.trigger-type { background: var(--accent-bg); color: var(--accent); padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; text-transform: capitalize; }
-	.trigger-value { color: var(--text-secondary); font-family: monospace; }
 	.empty-state { text-align: center; padding: 64px; color: var(--text-secondary); }
 	.empty-icon { font-size: 48px; margin-bottom: 12px; }
 	.loading-state { text-align: center; padding: 64px; color: var(--text-secondary); }

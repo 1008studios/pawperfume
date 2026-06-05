@@ -1,12 +1,13 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto, onNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { sidebarCollapsed, theme, toasts } from '$lib/stores';
 	import { clearToken, getTokenValue } from '$lib/api';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import MobileBottomNav from '$lib/components/MobileBottomNav.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	let { children } = $props();
 
@@ -31,6 +32,17 @@
 	let pendingOrders = $state(0);
 	let mobileSidebarOpen = $state(false);
 	let commandPaletteOpen = $state(false);
+
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 
 	onMount(() => {
 		const saved = localStorage.getItem('pp_theme') as 'light' | 'dark' | null;
@@ -136,41 +148,83 @@
 				{#each sections as section}
 					<div class="nav-section">{section}</div>
 					{#each navItems.filter(i => i.section === section) as item}
-						<a href={item.path} class="nav-item" class:active={isActive(item.path)} title={$sidebarCollapsed ? item.label : ''} onclick={handleNavClick}>
-							<span class="nav-icon">
-								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{@html item.svg}</svg>
-							</span>
-							<span class="nav-label">{item.label}</span>
-							{#if item.badge && item.path === '/chats' && unreadChats > 0}
-								<span class="nav-badge">{unreadChats}</span>
-							{/if}
-							{#if item.badge && item.path === '/orders' && pendingOrders > 0}
-								<span class="nav-badge">{pendingOrders}</span>
-							{/if}
-						</a>
+						{#if $sidebarCollapsed}
+							<Tooltip content={item.label} position="right" delay={100}>
+								<a href={item.path} class="nav-item" class:active={isActive(item.path)} onclick={handleNavClick}>
+									<span class="nav-icon">
+										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{@html item.svg}</svg>
+									</span>
+									<span class="nav-label">{item.label}</span>
+									{#if item.badge && item.path === '/chats' && unreadChats > 0}
+										<span class="nav-badge">{unreadChats}</span>
+									{/if}
+									{#if item.badge && item.path === '/orders' && pendingOrders > 0}
+										<span class="nav-badge">{pendingOrders}</span>
+									{/if}
+								</a>
+							</Tooltip>
+						{:else}
+							<a href={item.path} class="nav-item" class:active={isActive(item.path)} onclick={handleNavClick}>
+								<span class="nav-icon">
+									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{@html item.svg}</svg>
+								</span>
+								<span class="nav-label">{item.label}</span>
+								{#if item.badge && item.path === '/chats' && unreadChats > 0}
+									<span class="nav-badge">{unreadChats}</span>
+								{/if}
+								{#if item.badge && item.path === '/orders' && pendingOrders > 0}
+									<span class="nav-badge">{pendingOrders}</span>
+								{/if}
+							</a>
+						{/if}
 					{/each}
 				{/each}
 			</nav>
 
 			<div class="sidebar-footer">
-				<button class="nav-item" onclick={toggleTheme} title={$sidebarCollapsed ? ($theme === 'dark' ? 'Light Mode' : 'Dark Mode') : ''}>
-					<span class="nav-icon">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-							{#if $theme === 'dark'}
-								<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-							{:else}
-								<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-							{/if}
-						</svg>
-					</span>
-					<span class="nav-label">{$theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-				</button>
-				<button class="nav-item" onclick={logout} title={$sidebarCollapsed ? 'Logout' : ''}>
-					<span class="nav-icon">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><path d="M21 12H9"/></svg>
-					</span>
-					<span class="nav-label">Logout</span>
-				</button>
+				{#if $sidebarCollapsed}
+					<Tooltip content={$theme === 'dark' ? 'Light Mode' : 'Dark Mode'} position="right" delay={100}>
+						<button class="nav-item" onclick={toggleTheme}>
+							<span class="nav-icon">
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+									{#if $theme === 'dark'}
+										<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+									{:else}
+										<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+									{/if}
+								</svg>
+							</span>
+							<span class="nav-label">{$theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+						</button>
+					</Tooltip>
+					<Tooltip content="Logout" position="right" delay={100}>
+						<button class="nav-item" onclick={logout}>
+							<span class="nav-icon">
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><path d="M21 12H9"/></svg>
+							</span>
+							<span class="nav-label">Logout</span>
+						</button>
+					</Tooltip>
+				{:else}
+					<button class="nav-item" onclick={toggleTheme}>
+						<span class="nav-icon">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+								{#if $theme === 'dark'}
+									<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+								{:else}
+									<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+								{/if}
+							</svg>
+						</span>
+						<span class="nav-label">{$theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+					</button>
+					<button class="nav-item" onclick={logout}>
+						<span class="nav-icon">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><path d="M21 12H9"/></svg>
+						</span>
+						<span class="nav-label">Logout</span>
+					</button>
+				{/if}
 			</div>
 		</aside>
 
@@ -355,6 +409,8 @@
 		.sidebar.collapsed { width: 260px; transform: translateX(-100%); }
 		.sidebar.collapsed.mobile-open { transform: translateX(0); }
 		.main-content { padding-top: 60px; padding-bottom: 80px; }
+		.toast-container { bottom: 90px; right: 12px; left: 12px; }
+		.toast { min-width: 0; }
 	}
 	@keyframes page-in {
 		from {

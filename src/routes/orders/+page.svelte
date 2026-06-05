@@ -4,6 +4,8 @@
 	import type { Order, CustomField, OrderStatus, ColumnConfig } from '$lib/types';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import InlineEdit from '$lib/components/InlineEdit.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import { createDebouncedStore } from '$lib/debounce';
 
 	let orders = $state<Order[]>([]);
@@ -73,7 +75,7 @@
 				}
 			}
 		} catch (err) {
-			showToast('Failed to load orders', 'error');
+			showToast('Could not load orders. Please check your connection.', 'error');
 			console.error(err);
 		} finally { if (!silent) loading = false; }
 	}
@@ -192,6 +194,7 @@
 
 	let showDeleteConfirm = $state(false);
 	let deleteOrderId = $state<number | null>(null);
+	let showBulkDeleteConfirm = $state(false);
 
 	async function deleteOrder(id: number) { deleteOrderId = id; showDeleteConfirm = true; }
 
@@ -199,21 +202,25 @@
 		if (!deleteOrderId) return;
 		try {
 			await api.deleteOrder(deleteOrderId);
-			showToast('Order deleted.', 'success');
+			showToast(`Order #${deleteOrderId} deleted.`, 'success');
 			await loadOrders(true);
-		} catch (err) { showToast('Could not delete order. Please try again.', 'error'); }
+		} catch (err) { showToast('Could not delete the order.', 'error'); }
 		finally { showDeleteConfirm = false; deleteOrderId = null; }
 	}
 
-	async function bulkDelete() {
-		if (!confirm(`Are you sure you want to delete ${selectedIds.size} orders? This cannot be undone.`)) return;
+	function promptBulkDelete() {
+		showBulkDeleteConfirm = true;
+	}
+
+	async function confirmBulkDelete() {
 		try {
 			for (const id of selectedIds) { await api.deleteOrder(id); }
 			showToast(`${selectedIds.size} orders deleted.`, 'success');
 			selectedIds = new Set();
 			showBulkActions = false;
 			await loadOrders(true);
-		} catch { showToast('Could not delete orders. Please try again.', 'error'); }
+		} catch { showToast('Could not delete the selected orders. Please try again.', 'error'); }
+		finally { showBulkDeleteConfirm = false; }
 	}
 
 	async function bulkStatusChange() {
@@ -225,7 +232,7 @@
 			showBulkActions = false;
 			bulkStatus = '';
 			await loadOrders(true);
-		} catch { showToast('Could not update orders. Please try again.', 'error'); }
+		} catch { showToast('Could not update the orders. Please try again.', 'error'); }
 	}
 
 	async function quickStatusChange(order: Order, newStatus: string) {
@@ -233,7 +240,7 @@
 			await api.updateOrder(order.id, { status: newStatus });
 			showToast(`Order #${order.id} updated to ${newStatus}.`, 'success');
 			await loadOrders(true);
-		} catch { showToast('Could not update status. Please try again.', 'error'); }
+		} catch { showToast('Could not update the status. Please try again.', 'error'); }
 	}
 
 	async function saveOrder() {
@@ -251,10 +258,10 @@
 					notes: editingOrder.notes
 				});
 			}
-			showToast(editingOrder.id ? `Order #${editingOrder.id} updated successfully.` : 'Order created successfully. 📋', 'success');
+			showToast(editingOrder.id ? `Order #${editingOrder.id} updated.` : 'Order created.', 'success');
 			editingOrder = null;
 			await loadOrders(true);
-		} catch (err) { showToast('Could not save order. Check your fields and try again.', 'error'); }
+		} catch (err) { showToast('Could not save order. Please check the fields and try again.', 'error'); }
 	}
 
 	function newOrder(template?: typeof orderTemplates[0]) {
@@ -295,10 +302,10 @@
 		try {
 			await api.updateOrder(order.id, { payment_status: newStatus });
 			order.payment_status = newStatus;
-			showToast(`Order #${order.id} payment updated to ${newStatus}.`, 'success');
+			showToast(`Order #${order.id} payment status updated to ${newStatus}.`, 'success');
 			await loadOrders(true);
 		} catch {
-			showToast('Could not update payment status.', 'error');
+			showToast('Could not update payment status. Please try again.', 'error');
 		}
 	}
 
@@ -363,7 +370,7 @@
 				{#if bulkStatus}
 					<button class="btn btn-primary btn-sm" onclick={bulkStatusChange}>Apply</button>
 				{/if}
-				<button class="btn btn-danger btn-sm" onclick={bulkDelete}>Delete ({selectedIds.size})</button>
+				<button class="btn btn-danger btn-sm" onclick={promptBulkDelete}>Delete ({selectedIds.size})</button>
 				<button class="btn btn-ghost btn-sm" onclick={() => { selectedIds = new Set(); showBulkActions = false; }}>Clear</button>
 			</div>
 		</div>
@@ -537,12 +544,23 @@
 						</tr>
 					{:else}
 						<tr>
-							<td colspan={visibleColumns.length + 2} class="empty-state">
-								<div class="empty-icon"></div>
-								<p><strong>No orders found</strong></p>
-								<p style="font-size:13px;margin-bottom:16px">{hasActiveFilters ? 'Try adjusting your filters' : 'Create your first order to get started'}</p>
-								{#if !hasActiveFilters}
-									<button class="btn btn-primary" onclick={() => newOrder()}>+ Log Your First Order</button>
+							<td colspan={visibleColumns.length + 2} style="padding: 0;">
+								{#if orders.length === 0}
+									<EmptyState
+										title="No orders yet — let's add one! 📦"
+										description="Track all your sales here — from new orders to completed deliveries. You can also export a CSV report for your records."
+										iconType="order"
+										actionText="+ Log Your First Order"
+										onAction={() => newOrder()}
+									/>
+								{:else}
+									<EmptyState
+										title={hasActiveFilters ? "No matching orders found" : `No ${activeTab} orders`}
+										description={hasActiveFilters ? "Try another keyword, or clear the search to view all orders." : `Once orders are set to ${activeTab}, they will appear here.`}
+										iconType="order"
+										actionText={hasActiveFilters ? "Clear Filters" : ""}
+										onAction={hasActiveFilters ? clearFilters : undefined}
+									/>
 								{/if}
 							</td>
 						</tr>
@@ -665,28 +683,25 @@
 	</div>
 {/if}
 
-{#if showDeleteConfirm}
-	<div class="modal-overlay" onclick={() => showDeleteConfirm = false} role="presentation">
-		<div class="modal modal-sm">
-			<div class="modal-header">
-				<h3>Delete Order?</h3>
-				<button class="btn-icon" onclick={() => showDeleteConfirm = false} aria-label="Close modal">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<line x1="18" y1="6" x2="6" y2="18"></line>
-						<line x1="6" y1="6" x2="18" y2="18"></line>
-					</svg>
-				</button>
-			</div>
-			<div class="modal-body">
-				<p>Are you sure you want to delete order #{deleteOrderId}? This action cannot be undone.</p>
-			</div>
-			<div class="form-actions">
-				<button class="btn btn-ghost" onclick={() => showDeleteConfirm = false}>Cancel</button>
-				<button class="btn btn-danger" onclick={confirmDeleteOrder}>Delete</button>
-			</div>
-		</div>
-	</div>
-{/if}
+<ConfirmDialog
+	bind:open={showDeleteConfirm}
+	title={`Delete Order #${deleteOrderId}?`}
+	message="This action cannot be undone, but you can create a new order at any time."
+	confirmText="Yes, Delete"
+	cancelText="Cancel"
+	variant="danger"
+	onConfirm={confirmDeleteOrder}
+/>
+
+<ConfirmDialog
+	bind:open={showBulkDeleteConfirm}
+	title={`Delete ${selectedIds.size} Orders?`}
+	message="This action cannot be undone. All selected orders will be permanently deleted."
+	confirmText="Yes, Delete All"
+	cancelText="Cancel"
+	variant="danger"
+	onConfirm={confirmBulkDelete}
+/>
 
 <style>
 	.page { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
@@ -791,7 +806,19 @@
 	.kanban-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
 	.kanban-date { font-size: 11px; color: var(--text-tertiary); }
 	.kanban-status-change { font-size: 10px; padding: 1px 4px; border: 1px solid var(--border); border-radius: 3px; background: var(--surface); color: var(--text); cursor: pointer; }
-	.kanban-empty { text-align: center; padding: 24px; color: var(--text-tertiary); font-size: 13px; }
+	.kanban-empty {
+		text-align: center;
+		padding: 24px 16px;
+		color: var(--text-tertiary);
+		font-size: 13px;
+		border: 1px dashed var(--border);
+		border-radius: var(--radius);
+		background: var(--bg);
+		margin: 8px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
 
 	/* Buttons */
 	.btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }

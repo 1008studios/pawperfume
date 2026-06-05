@@ -6,6 +6,7 @@
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import DonutChart from '$lib/components/DonutChart.svelte';
 	import InlineEdit from '$lib/components/InlineEdit.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	let entries = $state<LedgerEntry[]>([]);
 	let loading = $state(true);
@@ -305,7 +306,17 @@
 							</td>
 						</tr>
 					{:else}
-						<tr><td colspan="6" class="empty-state"><div class="empty-icon"></div><p><strong>No entries found</strong></p><p style="font-size:13px">{hasFilters ? 'Try adjusting your filters' : 'Add your first entry to start tracking'}</p></td></tr>
+						<tr>
+							<td colspan="6" style="padding: 0;">
+								<EmptyState
+									title="No ledger entries found"
+									description={hasFilters ? "Try adjusting your filters or date range to find specific records." : "Log store income, operational expenses, shipping supplies, and more to see your profit margins."}
+									iconType="finance"
+									actionText={hasFilters ? "Clear Filters" : "Log First Entry"}
+									onAction={hasFilters ? clearFilters : () => showForm = true}
+								/>
+							</td>
+						</tr>
 					{/each}
 				</tbody>
 			</table>

@@ -3,6 +3,7 @@
 	import { api, timeAgo, showToast } from '$lib/api';
 	import type { Conversation, Message, QuickReply, Tag, CustomField } from '$lib/types';
 	import AutoOrderExtractor from '$lib/components/AutoOrderExtractor.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 
 	let conversations = $state<Conversation[]>([]);
 	let selectedConv = $state<Conversation | null>(null);
@@ -46,7 +47,7 @@
 				notes: `Extracted from message:\n"${extractorMessageText}"\n\nProduct: ${extracted.product || 'Not specified'}\nQuantity: ${extracted.quantity || 1}\nAddress: ${extracted.address || 'Not specified'}\nNotes: ${extracted.notes || ''}`
 			};
 			await api.createOrder(orderPayload);
-			showToast('Order created successfully from message!', 'success');
+			showToast('Order created from message.', 'success');
 			showExtractorModal = false;
 		} catch (err) {
 			showToast('Failed to create order from message.', 'error');
@@ -343,6 +344,7 @@
 	}
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="chat-page" ondragover={handleDragOver} ondrop={handleDrop}>
 	<div class="conversations-panel">
 		<div class="panel-header">
@@ -362,40 +364,58 @@
 			<button class="conv-tab" class:active={activeTab === 'bots'} onclick={() => activeTab = 'bots'}>Bot On</button>
 		</div>
 		<div class="conversations-list">
-			{#each filteredConversations as conv}
-				<button
-					class="conv-item"
-					class:active={selectedConv?.id === conv.id}
-					onclick={() => selectConversation(conv)}
-				>
-					<div class="conv-avatar" class:online={new Date(conv.last_activity_at || conv.updated_at).getTime() > Date.now() - 300000}>
-						{(conv.name || conv.sender_id || 'U').charAt(0).toUpperCase()}
-					</div>
-					<div class="conv-info">
-						<div class="conv-header">
-							<div class="conv-name">{conv.name || `User ${conv.sender_id.slice(0, 8)}`}</div>
-							<div class="conv-time">{getConvPreview(conv)}</div>
-						</div>
-						<div class="conv-meta">
-							{#if conv.tags?.length}
-								<div class="conv-tags">
-									{#each conv.tags.slice(0, 2) as tag}
-										<span class="mini-tag">{tag}</span>
-									{/each}
-								</div>
-							{/if}
-							{#if conv.is_bot_enabled}
-								<span class="bot-badge"></span>
-							{/if}
-							<span class="status-badge status-{conv.status}">{conv.status}</span>
+			{#if loading}
+				{#each Array(6) as _}
+					<div class="conv-item" style="gap: 12px; pointer-events: none;">
+						<Skeleton width="40px" height="40px" borderRadius="50%" />
+						<div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+							<div style="display: flex; justify-content: space-between;">
+								<Skeleton width="60%" height="14px" />
+								<Skeleton width="20%" height="12px" />
+							</div>
+							<div style="display: flex; gap: 6px;">
+								<Skeleton width="40px" height="16px" borderRadius="8px" />
+								<Skeleton width="30px" height="16px" borderRadius="8px" />
+							</div>
 						</div>
 					</div>
-				</button>
+				{/each}
 			{:else}
-				<div class="empty-state">
-					<p>No conversations found</p>
-				</div>
-			{/each}
+				{#each filteredConversations as conv}
+					<button
+						class="conv-item"
+						class:active={selectedConv?.id === conv.id}
+						onclick={() => selectConversation(conv)}
+					>
+						<div class="conv-avatar" class:online={new Date(conv.last_activity_at || conv.updated_at).getTime() > Date.now() - 300000}>
+							{(conv.name || conv.sender_id || 'U').charAt(0).toUpperCase()}
+						</div>
+						<div class="conv-info">
+							<div class="conv-header">
+								<div class="conv-name">{conv.name || `User ${conv.sender_id.slice(0, 8)}`}</div>
+								<div class="conv-time">{getConvPreview(conv)}</div>
+							</div>
+							<div class="conv-meta">
+								{#if conv.tags?.length}
+									<div class="conv-tags">
+										{#each conv.tags.slice(0, 2) as tag}
+											<span class="mini-tag">{tag}</span>
+										{/each}
+									</div>
+								{/if}
+								{#if conv.is_bot_enabled}
+									<span class="bot-badge"></span>
+								{/if}
+								<span class="status-badge status-{conv.status}">{conv.status}</span>
+							</div>
+						</div>
+					</button>
+				{:else}
+					<div class="empty-state">
+						<p>No conversations found</p>
+					</div>
+				{/each}
+			{/if}
 		</div>
 	</div>
 
@@ -605,6 +625,7 @@
 								<div class="custom-fields-form">
 									{#each conversationCustomFields as cf}
 										<div class="custom-field-item">
+											<!-- svelte-ignore a11y_label_has_associated_control -->
 											<label class="custom-field-label" for="cf-input-{cf.field_key}">{cf.field_label || cf.field_key}</label>
 											{#if cf.field_type === 'dropdown'}
 												<select 
@@ -729,82 +750,12 @@
 				</div>
 			{/if}
 		{:else}
-			<!-- Sample chat preview when no conversation is selected -->
-			<div class="sample-chat">
-				<div class="sample-chat-header">
-					<div class="chat-user">
-						<div class="conv-avatar large" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-							M
-							<span class="sample-online-dot"></span>
-						</div>
-						<div>
-							<div class="chat-user-name">Maria Santos</div>
-							<div class="chat-user-status sample-status">Active now</div>
-						</div>
-					</div>
-					<span class="sample-badge">Preview</span>
-				</div>
-				<div class="sample-messages">
-					<!-- Bot greeting -->
-					<div class="sample-msg sample-bot">
-						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">B</div>
-						<div class="sample-bubble-wrap">
-							<div class="sample-bubble bot">Hi! 👋 Welcome to Pawperfume. What's your pet's name?</div>
-							<div class="sample-meta">Bot · 10:02 AM</div>
-						</div>
-					</div>
-					<!-- User reply -->
-					<div class="sample-msg sample-user">
-						<div class="sample-bubble-wrap" style="align-items: flex-end;">
-							<div class="sample-bubble user">My dog's name is Coco! 🐶</div>
-							<div class="sample-meta" style="text-align: right;">You · 10:03 AM ✓✓</div>
-						</div>
-						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">M</div>
-					</div>
-					<!-- Bot reply -->
-					<div class="sample-msg sample-bot">
-						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">B</div>
-						<div class="sample-bubble-wrap">
-							<div class="sample-bubble bot">Aww, Coco! 🐾 What scent is Coco into? Choose one:</div>
-							<div class="sample-choices">
-								<span class="sample-choice">🌸 Floral</span>
-								<span class="sample-choice">🌿 Fresh</span>
-								<span class="sample-choice">🍦 Sweet</span>
-							</div>
-							<div class="sample-meta">Bot · 10:03 AM</div>
-						</div>
-					</div>
-					<!-- User picks -->
-					<div class="sample-msg sample-user">
-						<div class="sample-bubble-wrap" style="align-items: flex-end;">
-							<div class="sample-bubble user">🌸 Floral</div>
-							<div class="sample-meta" style="text-align: right;">You · 10:04 AM ✓✓</div>
-						</div>
-						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">M</div>
-					</div>
-					<!-- Bot final -->
-					<div class="sample-msg sample-bot">
-						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">B</div>
-						<div class="sample-bubble-wrap">
-							<div class="sample-bubble bot">Perfect! I'll prepare a Floral bundle for Coco. Your order is being processed 🎀</div>
-							<div class="sample-meta">Bot · 10:04 AM</div>
-						</div>
-					</div>
-					<!-- Typing indicator -->
-					<div class="sample-msg sample-bot">
-						<div class="sample-avatar-sm" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">M</div>
-						<div class="sample-typing">
-							<span></span><span></span><span></span>
-						</div>
-					</div>
-				</div>
-				<div class="sample-reply">
-					<div class="sample-reply-input">Select a real conversation to reply →</div>
-					<button class="sample-send-btn" disabled aria-label="Send (disabled preview)">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					</button>
-				</div>
-				<div class="sample-hint">← Select a conversation to start responding</div>
+			<div class="empty-state" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; color: var(--text-secondary); text-align: center;">
+				<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px; opacity: 0.4;">
+					<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+				</svg>
+				<p style="font-size: 15px; font-weight: 500; margin-bottom: 4px;">No conversation selected</p>
+				<p style="font-size: 13px; max-width: 260px;">Select a conversation from the list to view messages and respond.</p>
 			</div>
 		{/if}
 	</div>
@@ -1111,99 +1062,6 @@
 		transition: background 0.15s;
 	}
 	.mobile-back-btn:hover { background: var(--surface-hover); }
-
-	/* ── Sample Chat Preview ─────────────────────────────────── */
-	.sample-chat {
-		flex: 1; display: flex; flex-direction: column; background: var(--bg);
-		min-width: 0;
-	}
-	.sample-chat-header {
-		padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex;
-		align-items: center; justify-content: space-between; background: var(--surface);
-		flex-shrink: 0;
-	}
-	.sample-online-dot {
-		position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px;
-		border-radius: 50%; background: #22c55e; border: 2px solid var(--surface);
-	}
-	.sample-status { color: #22c55e; font-style: italic; }
-	.sample-badge {
-		font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
-		background: rgba(99, 102, 241, 0.12); color: #6366f1; padding: 3px 8px;
-		border-radius: 20px; border: 1px solid rgba(99, 102, 241, 0.2);
-	}
-	.sample-messages {
-		flex: 1; overflow-y: auto; padding: 20px 20px 12px;
-		display: flex; flex-direction: column; gap: 12px;
-	}
-	.sample-msg { display: flex; gap: 8px; align-items: flex-end; }
-	.sample-bot { justify-content: flex-start; }
-	.sample-user { justify-content: flex-end; }
-	.sample-avatar-sm {
-		width: 28px; height: 28px; border-radius: 50%; color: white;
-		display: flex; align-items: center; justify-content: center;
-		font-weight: 700; font-size: 11px; flex-shrink: 0;
-	}
-	.sample-bubble-wrap { display: flex; flex-direction: column; max-width: 62%; gap: 4px; }
-	.sample-bubble {
-		padding: 10px 14px; font-size: 14px; line-height: 1.5;
-		word-wrap: break-word;
-	}
-	.sample-bubble.bot {
-		background: var(--surface3, var(--surface));
-		border: 1px solid var(--border);
-		border-radius: 18px 18px 18px 4px;
-		color: var(--text);
-	}
-	.sample-bubble.user {
-		background: var(--accent);
-		color: white;
-		border-radius: 18px 18px 4px 18px;
-	}
-	.sample-meta { font-size: 10px; color: var(--text-tertiary); padding: 0 4px; }
-	.sample-choices { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-	.sample-choice {
-		padding: 5px 12px; border: 1px solid var(--accent); border-radius: 16px;
-		font-size: 12px; color: var(--accent); background: var(--accent-bg);
-		cursor: default; font-weight: 500;
-	}
-	.sample-typing {
-		display: inline-flex; gap: 4px; padding: 12px 16px;
-		background: var(--surface3, var(--surface));
-		border: 1px solid var(--border);
-		border-radius: 18px 18px 18px 4px;
-	}
-	.sample-typing span {
-		width: 7px; height: 7px; border-radius: 50%;
-		background: var(--text-tertiary);
-		animation: sampleTyping 1.4s infinite ease-in-out;
-	}
-	.sample-typing span:nth-child(2) { animation-delay: 0.2s; }
-	.sample-typing span:nth-child(3) { animation-delay: 0.4s; }
-	@keyframes sampleTyping {
-		0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-		40% { transform: translateY(-4px); opacity: 1; }
-	}
-	.sample-reply {
-		display: flex; gap: 10px; align-items: center;
-		padding: 12px 16px; border-top: 1px solid var(--border);
-		background: var(--surface); flex-shrink: 0;
-	}
-	.sample-reply-input {
-		flex: 1; padding: 10px 16px; border-radius: 20px;
-		background: var(--surface-hover); color: var(--text-tertiary);
-		font-size: 13px; font-style: italic;
-	}
-	.sample-send-btn {
-		width: 36px; height: 36px; border-radius: 50%; background: var(--accent);
-		border: none; display: flex; align-items: center; justify-content: center;
-		color: white; opacity: 0.4; cursor: not-allowed;
-	}
-	.sample-hint {
-		text-align: center; font-size: 11px; color: var(--text-tertiary);
-		padding: 6px 16px 10px; background: var(--surface);
-		border-top: 1px solid var(--border); flex-shrink: 0;
-	}
 
 	@media (max-width: 768px) {
 		.chat-page { position: relative; }

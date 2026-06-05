@@ -71,6 +71,8 @@
 			ondragover={(e) => handleDragOver(e, status.key)}
 			ondragleave={handleDragLeave}
 			ondrop={(e) => handleDrop(e, status.key)}
+			role="region"
+			aria-label="{status.label} column"
 		>
 			<div class="column-header">
 				<div class="column-title">
@@ -88,6 +90,10 @@
 						ondragstart={(e) => handleDragStart(e, order)}
 						ondragend={handleDragEnd}
 						onclick={() => dispatch('select', order)}
+						onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch('select', order)}
+						role="button"
+						tabindex="0"
+						aria-label="Order #{order.id} for {order.customer_name || 'Unknown Customer'}"
 					>
 						<div class="card-header">
 							<span class="order-id">#{order.id}</span>
@@ -235,6 +241,7 @@
 		margin: 0;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}

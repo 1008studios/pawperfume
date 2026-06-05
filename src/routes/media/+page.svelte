@@ -4,6 +4,8 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { MediaAsset } from '$lib/types';
 	import InlineEdit from '$lib/components/InlineEdit.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	let media = $state<MediaAsset[]>([]);
 	let loading = $state(true);
@@ -188,7 +190,17 @@
 	</div>
 
 	{#if loading}
-		<div class="loading-state">Loading...</div>
+		<div class="media-grid">
+			{#each Array(8) as _}
+				<div class="media-card" style="gap: 8px;">
+					<Skeleton width="100%" height="160px" borderRadius="8px 8px 0 0" />
+					<div style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+						<Skeleton width="70%" height="14px" />
+						<Skeleton width="40%" height="12px" />
+					</div>
+				</div>
+			{/each}
+		</div>
 	{:else}
 		<div class="media-grid">
 			{#each media as item}
@@ -219,10 +231,16 @@
 					</button>
 				</div>
 			{:else}
-				<div class="empty-state">
-					<div class="empty-icon"></div>
-					<p>No media yet</p>
-				</div>
+				<EmptyState
+					title="No media files yet"
+					description="Upload pictures of your perfume products, store receipt mockups, or custom logo assets."
+					iconType="media"
+					actionText="Upload File"
+					onAction={() => {
+						const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+						if (fileInput) fileInput.click();
+					}}
+				/>
 			{/each}
 		</div>
 	{/if}

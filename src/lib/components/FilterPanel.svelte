@@ -104,7 +104,7 @@
 		<div class="filter-sections">
 			<!-- Status Filter -->
 			<div class="filter-section">
-				<label class="filter-label">Status</label>
+				<span class="filter-label">Status</span>
 				<div class="status-chips">
 					{#each ['new', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'] as status}
 						<button
@@ -120,13 +120,14 @@
 
 			<!-- Date Range -->
 			<div class="filter-section">
-				<label class="filter-label">Date Range</label>
+				<span class="filter-label">Date Range</span>
 				<div class="date-range">
 					<input
 						type="date"
 						bind:value={dateStart}
 						placeholder="Start date"
 						class="filter-input"
+						aria-label="Start date"
 					/>
 					<span class="date-separator">to</span>
 					<input
@@ -134,13 +135,14 @@
 						bind:value={dateEnd}
 						placeholder="End date"
 						class="filter-input"
+						aria-label="End date"
 					/>
 				</div>
 			</div>
 
 			<!-- Amount Range -->
 			<div class="filter-section">
-				<label class="filter-label">Amount Range (₱)</label>
+				<span class="filter-label">Amount Range (₱)</span>
 				<div class="amount-range">
 					<input
 						type="number"
@@ -148,6 +150,7 @@
 						placeholder="Min"
 						class="filter-input"
 						min="0"
+						aria-label="Minimum amount"
 					/>
 					<span class="amount-separator">-</span>
 					<input
@@ -156,15 +159,17 @@
 						placeholder="Max"
 						class="filter-input"
 						min="0"
+						aria-label="Maximum amount"
 					/>
 				</div>
 			</div>
 
 			<!-- Customer Search -->
 			<div class="filter-section">
-				<label class="filter-label">Customer</label>
+				<label class="filter-label" for="customer-filter-input">Customer</label>
 				<input
 					type="text"
+					id="customer-filter-input"
 					bind:value={customerSearch}
 					placeholder="Search by customer name..."
 					class="filter-input"
@@ -182,6 +187,7 @@
 					bind:value={filterName}
 					placeholder="Filter name"
 					class="filter-input"
+					aria-label="Filter preset name"
 				/>
 				<button class="btn btn-primary" onclick={saveFilter}>
 					Save
@@ -199,8 +205,8 @@
 							<button class="saved-filter-name" onclick={() => loadFilter(filter)}>
 								{filter.name}
 							</button>
-							<button class="btn-icon danger" onclick={() => deleteFilter(filter.id)}>
-								
+							<button class="btn-icon danger" onclick={() => deleteFilter(filter.id)} aria-label="Delete filter preset" title="Delete filter preset">
+								×
 							</button>
 						</div>
 					{/each}

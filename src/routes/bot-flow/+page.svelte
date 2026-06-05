@@ -4,6 +4,8 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { BotFlowStep } from '$lib/types';
 	import InlineEdit from '$lib/components/InlineEdit.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 
 	let steps = $state<BotFlowStep[]>([]);
 	let loading = $state(true);
@@ -481,14 +483,35 @@
 	</header>
 
 	{#if loading}
-		<div class="loading-state">Loading...</div>
-	{:else if sortedSteps.length === 0}
-		<div class="empty-hero">
-			<div class="empty-icon"></div>
-			<h2>Build Your Bot Flow</h2>
-			<p>Create a step-by-step conversation flow that guides customers through ordering, collecting information, and more.</p>
-			<button class="btn btn-primary" onclick={openNewStep}>+ Create First Step</button>
+		<div class="flow-visualizer">
+			{#each Array(3) as _, i}
+				<div class="flow-step" style="display: flex; align-items: center; gap: 16px; width: 100%;">
+					<div style="display: flex; flex-direction: column; gap: 4px;">
+						<Skeleton width="16px" height="16px" />
+						<Skeleton width="16px" height="16px" />
+					</div>
+					<div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+						<div style="display: flex; justify-content: space-between; align-items: center;">
+							<Skeleton width="140px" height="20px" />
+							<Skeleton width="80px" height="18px" borderRadius="10px" />
+						</div>
+						<Skeleton width="100%" height="40px" borderRadius="12px" />
+						<Skeleton width="60px" height="14px" />
+					</div>
+				</div>
+				{#if i < 2}
+					<div class="flow-connector-line"></div>
+				{/if}
+			{/each}
 		</div>
+	{:else if sortedSteps.length === 0}
+		<EmptyState
+			title="Build Your Bot Flow"
+			description="Create a step-by-step conversation flow that guides customers through ordering, collecting scent preferences, choosing bottle sizes, and more."
+			iconType="automation"
+			actionText="Create First Step"
+			onAction={openNewStep}
+		/>
 	{:else}
 		<div class="flow-visualizer">
 			{#each sortedSteps as step, i}
@@ -526,6 +549,8 @@
 					</div>
 					<div class="step-content">
 						<div class="step-header">
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
 							<span class="step-label" onclick={(e) => e.stopPropagation()}>
 								<InlineEdit
 									bind:value={step.step_label}
@@ -540,6 +565,8 @@
 								{/if}
 							</div>
 						</div>
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<div class="step-preview" onclick={(e) => e.stopPropagation()}>
 							<div class="preview-bubble bot" style="width: 100%;">
 								<InlineEdit
@@ -553,7 +580,7 @@
 						{#if step.step_type === 'image'}
 							{#if step.image_url}
 								<div class="step-image-preview">
-									<img src={step.image_url} alt="Step image" />
+									<img src={step.image_url} alt="Step illustration" />
 								</div>
 							{:else}
 								<div class="step-image-placeholder">
@@ -626,6 +653,8 @@
 
 <!-- ── Test Modal ──────────────────────────────────────────────── -->
 {#if showTestMode}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="modal-overlay" onclick={() => showTestMode = false} role="presentation">
 		<div class="modal modal-test" style="width: 760px; max-width: 95vw; height: 600px; display: flex; flex-direction: column;">
 			<div class="modal-header">
@@ -645,7 +674,7 @@
 								<div class="test-text" style="padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; background: {entry.type === 'user' ? 'var(--accent)' : entry.type === 'system' ? 'var(--surface-hover)' : 'var(--surface)'}; color: {entry.type === 'user' ? 'white' : 'var(--text)'}; border: {entry.type !== 'user' ? '1px solid var(--border)' : 'none'};">
 									{entry.text}
 									{#if entry.imageUrl}
-										<img src={entry.imageUrl} alt="Bot image" style="display: block; margin-top: 8px; max-width: 200px; border-radius: 8px;" />
+										<img src={entry.imageUrl} alt="Bot message attachment" style="display: block; margin-top: 8px; max-width: 200px; border-radius: 8px;" />
 									{/if}
 								</div>
 							</div>
@@ -696,11 +725,13 @@
 
 <!-- ── Add/Edit Step Modal ──────────────────────────────────────── -->
 {#if showForm}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) { showForm = false; editingStep = null; } }} role="presentation">
 		<div class="modal" style="max-height: 90vh; overflow-y: auto;">
 			<div class="modal-header">
 				<h3>{editingStep ? 'Edit Step' : 'Add Step'}</h3>
-				<button class="btn-icon" onclick={() => { showForm = false; editingStep = null }}>
+				<button class="btn-icon" onclick={() => { showForm = false; editingStep = null }} aria-label="Close">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 				</button>
 			</div>
@@ -772,7 +803,7 @@
 				<!-- Carousel items -->
 				{#if newStep.stepType === 'carousel'}
 					<div class="form-group">
-						<label>Carousel Items</label>
+						<span class="form-label-title">Carousel Items</span>
 						{#each newStep.carouselItems as item, ci}
 							<div class="carousel-item-editor">
 								<div class="carousel-item-header">
@@ -812,7 +843,7 @@
 
 				{#if newStep.stepType === 'button_choice'}
 					<div class="form-group">
-						<label>Button Choices</label>
+						<span class="form-label-title">Button Choices</span>
 						{#each newStep.buttonChoices as choice, ci}
 							<div class="choice-row">
 								<input type="text" bind:value={choice.label} placeholder="Button label" />
@@ -1019,7 +1050,7 @@
 	.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px 20px; }
 	.form-group { padding: 0 20px; margin-bottom: 12px; }
 	.form-grid .form-group { padding: 0; }
-	.form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; }
+	.form-group label, .form-group .form-label-title { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; }
 	.form-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
 	.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; background: var(--bg); color: var(--text); font-family: var(--font); }
 	.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }

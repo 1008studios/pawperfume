@@ -157,6 +157,7 @@
 				{/each}
 			</div>
 
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div 
 				class="canvas"
 				onmousemove={handleCanvasMouseMove}
@@ -222,7 +223,7 @@
 								aria-label="Delete node"
 								title="Delete node"
 							>
-								
+								×
 							</button>
 						</div>
 						<div class="node-body">

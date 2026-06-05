@@ -2,6 +2,9 @@
 	import { onMount } from 'svelte';
 	import { api, showToast } from '$lib/api';
 	import type { Tenant, CustomField } from '$lib/types';
+	import InlineEdit from '$lib/components/InlineEdit.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
 	let tenant = $state<Partial<Tenant>>({});
 	let customFields = $state<CustomField[]>([]);
@@ -20,6 +23,8 @@
 	let newCfType = $state('select');
 	let newCfOptions = $state<string[]>([]);
 	let newOptionText = $state('');
+	let showCfDeleteConfirm = $state(false);
+	let cfToDeleteId = $state<number | null>(null);
 
 	const sections = [
 		{ key: 'brand', label: 'Brand', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7" stroke-width="2"/></svg>' },
@@ -38,7 +43,7 @@
 			tenant = await api.tenantConfig();
 			customFields = await api.customFields() as CustomField[];
 		}
-		catch { showToast('Could not load settings. Please try again.', 'error'); }
+		catch { showToast('Could not load settings. Please refresh the page.', 'error'); }
 		finally { loading = false; }
 	}
 
@@ -94,22 +99,30 @@
 		if (!editingCf) return;
 		try {
 			await api.updateCustomField(editingCf.id, editingCf);
-			showToast('Custom field updated successfully.', 'success');
+			showToast('Custom field updated.', 'success');
 			editingCf = null;
 			customFields = await api.customFields() as CustomField[];
 		} catch {
-			showToast('Could not save custom field.', 'error');
+			showToast('Could not save custom field. Please try again.', 'error');
 		}
 	}
 
-	async function removeCf(id: number) {
-		if (!confirm('Are you sure you want to delete this custom field? This may affect existing orders.')) return;
+	function promptRemoveCf(id: number) {
+		cfToDeleteId = id;
+		showCfDeleteConfirm = true;
+	}
+
+	async function confirmRemoveCf() {
+		if (!cfToDeleteId) return;
 		try {
-			await api.deleteCustomField(id);
+			await api.deleteCustomField(cfToDeleteId);
 			showToast('Custom field deleted.', 'success');
 			customFields = await api.customFields() as CustomField[];
 		} catch {
-			showToast('Could not delete custom field.', 'error');
+			showToast('Could not delete custom field. Please try again.', 'error');
+		} finally {
+			showCfDeleteConfirm = false;
+			cfToDeleteId = null;
 		}
 	}
 
@@ -133,7 +146,7 @@
 				applyTo: 'orders',
 				sortOrder: customFields.length
 			});
-			showToast('Custom field created successfully.', 'success');
+			showToast('Custom field created.', 'success');
 			showNewCfModal = false;
 			newCfKey = '';
 			newCfLabel = '';
@@ -141,7 +154,7 @@
 			newCfOptions = [];
 			customFields = await api.customFields() as CustomField[];
 		} catch {
-			showToast('Could not create custom field.', 'error');
+			showToast('Could not create custom field. Please try again.', 'error');
 		}
 	}
 </script>
@@ -169,7 +182,30 @@
 
 		<div class="settings-content">
 			{#if loading}
-				<div class="loading-state">Loading settings...</div>
+				<div class="settings-section" style="display: flex; flex-direction: column; gap: 16px;">
+					<Skeleton width="40%" height="24px" />
+					<Skeleton width="60%" height="16px" />
+					<div style="margin-top: 12px; display: flex; flex-direction: column; gap: 12px;">
+						<div style="margin-bottom: 12px;">
+							<div style="margin-bottom: 6px;">
+								<Skeleton width="100px" height="14px" />
+							</div>
+							<Skeleton width="100%" height="40px" />
+						</div>
+						<div style="margin-bottom: 12px;">
+							<div style="margin-bottom: 6px;">
+								<Skeleton width="80px" height="14px" />
+							</div>
+							<Skeleton width="100%" height="40px" />
+						</div>
+						<div style="margin-bottom: 12px;">
+							<div style="margin-bottom: 6px;">
+								<Skeleton width="120px" height="14px" />
+							</div>
+							<Skeleton width="100%" height="80px" />
+						</div>
+					</div>
+				</div>
 			{:else if activeSection === 'brand'}
 				<section class="settings-section">
 					<h2>Brand Identity</h2>
@@ -312,13 +348,24 @@
 						{#each customFields as cf}
 							<div class="cf-card" style="border: 1px solid var(--border); border-radius: 8px; padding: 16px; background: var(--bg);">
 								<div class="cf-card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-									<div>
-										<strong style="font-size:15px; color:var(--text);">{cf.field_label || cf.field_key}</strong>
-										<code style="font-size:11px; color:var(--text-tertiary); margin-left:8px; background:var(--surface); padding:2px 6px; border-radius:4px;">{cf.field_key}</code>
+									<div style="display:flex; align-items:center; gap:8px;">
+										<InlineEdit
+											bind:value={cf.field_label}
+											onSave={async (val) => {
+												try {
+													await api.updateCustomField(cf.id, { ...cf, field_label: val });
+													showToast('Field label updated.', 'success');
+												} catch {
+													showToast('Could not update field label. Please try again.', 'error');
+												}
+											}}
+											placeholder={cf.field_key}
+										/>
+										<code style="font-size:11px; color:var(--text-tertiary); background:var(--surface); padding:2px 6px; border-radius:4px;">{cf.field_key}</code>
 									</div>
 									<div style="display:flex; gap:6px;">
 										<button class="btn btn-ghost btn-sm" onclick={() => editCf(cf)}>Edit Options</button>
-										<button class="btn btn-ghost btn-sm text-red" onclick={() => removeCf(cf.id)}>Delete</button>
+										<button class="btn btn-ghost btn-sm text-red" onclick={() => promptRemoveCf(cf.id)}>Delete</button>
 									</div>
 								</div>
 								
@@ -478,6 +525,16 @@
 		</div>
 	</div>
 {/if}
+
+<ConfirmDialog
+	bind:open={showCfDeleteConfirm}
+	title="Delete This Custom Field?"
+	message="This field will be removed from settings and may affect existing orders that contain custom data."
+	confirmText="Yes, Delete"
+	cancelText="Cancel"
+	variant="danger"
+	onConfirm={confirmRemoveCf}
+/>
 
 <style>
 	.page { padding: 24px 32px; max-width: 1100px; margin: 0 auto; }
