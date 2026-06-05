@@ -784,9 +784,6 @@
 	.row-actions { display: flex; gap: 2px; justify-content: flex-end; opacity: 0; transition: opacity 0.15s; }
 	tr:hover .row-actions { opacity: 1; }
 
-	.empty-state { text-align: center; padding: 48px 24px; color: var(--text-secondary); }
-	.empty-icon { font-size: 48px; margin-bottom: 12px; }
-
 	.pagination { display: flex; justify-content: center; align-items: center; gap: 16px; padding: 16px 0; }
 	.page-info { font-size: 13px; color: var(--text-secondary); }
 
@@ -837,10 +834,8 @@
 	/* Modal */
 	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
 	.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; width: 560px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
-	.modal-sm { width: 400px; }
 	.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
 	.modal-header h3 { font-size: 16px; font-weight: 600; }
-	.modal-body { padding: 20px; }
 	.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px 20px; }
 	.form-group { padding: 0 20px; margin-bottom: 10px; }
 	.form-grid .form-group { padding: 0; }

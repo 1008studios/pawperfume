@@ -432,8 +432,6 @@
 	.table tr:last-child td { border-bottom: none; }
 	.table tr:hover td { background: var(--surface-hover); }
 	.amount { font-weight: 600; }
-	.empty-state { text-align: center; padding: 48px; color: var(--text-secondary); }
-	.empty-icon { font-size: 48px; margin-bottom: 12px; }
 
 	.btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; }
 	.btn-primary { background: var(--accent); color: white; }

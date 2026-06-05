@@ -237,9 +237,6 @@
 	.card-question { font-weight: 600; margin-bottom: 8px; }
 	.card-answer { color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5; }
 	.card-keywords { display: flex; flex-wrap: wrap; gap: 6px; }
-	.empty-state { text-align: center; padding: 64px; color: var(--text-secondary); }
-	.empty-icon { font-size: 48px; margin-bottom: 12px; }
-	.loading-state { text-align: center; padding: 64px; color: var(--text-secondary); }
 	.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; }
 	.btn-primary { background: var(--accent); color: white; }
 	.btn-primary:hover { background: var(--accent-hover); }

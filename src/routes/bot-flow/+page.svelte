@@ -881,11 +881,6 @@
 	.step-count { font-size: 13px; color: var(--text-secondary); background: var(--surface-hover); padding: 2px 8px; border-radius: 10px; }
 	.page-actions { display: flex; gap: 8px; }
 
-	.empty-hero { text-align: center; padding: 64px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
-	.empty-hero .empty-icon { font-size: 56px; margin-bottom: 16px; }
-	.empty-hero h2 { font-size: 20px; margin-bottom: 8px; }
-	.empty-hero p { color: var(--text-secondary); max-width: 400px; margin: 0 auto 20px; line-height: 1.5; }
-
 	.flow-visualizer { display: flex; flex-direction: column; align-items: center; }
 	.flow-connector-line { width: 2px; height: 20px; background: var(--border); }
 

@@ -1064,22 +1064,27 @@
 	.mobile-back-btn:hover { background: var(--surface-hover); }
 
 	@media (max-width: 768px) {
-		.chat-page { position: relative; }
-		
-		.conversations-panel { 
-			width: 100%; 
-			position: absolute;
-			inset: 0;
-			z-index: 10;
+		.chat-page {
+			display: flex;
+			position: relative;
+			height: calc(100vh - 60px - 80px);
+			height: calc(100dvh - 60px - 80px);
+			overflow: hidden;
 		}
 		
-		.chat-panel { 
-			display: flex;
+		.conversations-panel {
+			width: 100%;
+			flex-shrink: 0;
+			transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+		
+		.chat-panel {
 			position: absolute;
 			inset: 0;
-			z-index: 20;
+			display: flex;
 			transform: translateX(100%);
-			transition: transform 0.2s ease;
+			transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+			z-index: 10;
 		}
 		
 		.chat-panel.mobile-visible {
@@ -1088,36 +1093,31 @@
 		
 		.mobile-back-btn { display: flex; }
 		
-		.info-panel { 
+		.info-panel {
 			position: absolute;
-			right: 0;
-			top: 0;
-			bottom: 0;
-			width: 100%;
-			z-index: 30;
+			inset: 0;
+			z-index: 20;
+			transform: translateX(100%);
+			transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 		}
 		
-		/* Improve touch targets on mobile */
+		.info-panel.info-visible {
+			transform: translateX(0);
+		}
+
 		.conv-item { padding: 14px 16px; }
-		.btn-icon { padding: 12px; min-width: 44px; min-height: 44px; }
+		.btn-icon { padding: 12px; min-width: 48px; min-height: 48px; }
 		.reply-actions-left .btn-icon { padding: 10px; }
-		.send-btn { padding: 12px 20px; min-height: 44px; }
-		.conv-tab { padding: 12px 16px; min-height: 44px; }
-		
-		/* Better reply box on mobile */
+		.send-btn { padding: 12px 20px; min-height: 48px; }
+		.conv-tab { padding: 12px 16px; min-height: 48px; }
+
 		.reply-box { padding: 12px 16px; }
 		.reply-input-wrap textarea { font-size: 16px; padding: 12px; }
-		
-		/* Improve search on mobile */
+
 		.search-box { padding: 12px 16px; }
 		.search-box input { font-size: 16px; }
-		.chat-search-input { 
-			width: 120px; 
-			font-size: 16px; 
-			padding: 8px 12px; 
-		}
-		
-		/* Better emoji picker on mobile */
+		.chat-search-input { width: 120px; font-size: 16px; padding: 8px 12px; }
+
 		.emoji-picker {
 			left: 16px;
 			right: 16px;

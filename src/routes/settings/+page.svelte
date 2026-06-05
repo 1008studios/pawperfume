@@ -606,8 +606,6 @@
 	.info-value.code { font-family: monospace; font-size: 12px; background: var(--surface-hover); padding: 2px 6px; border-radius: 3px; }
 	.plan-badge { background: var(--accent-bg); color: var(--accent); padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; text-transform: capitalize; }
 
-	.loading-state { text-align: center; padding: 64px; color: var(--text-secondary); }
-
 	.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; }
 	.btn-primary { background: var(--accent); color: white; }
 	.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
