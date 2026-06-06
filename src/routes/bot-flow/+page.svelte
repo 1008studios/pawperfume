@@ -3,7 +3,6 @@
 	import { api, showToast } from '$lib/api';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import type { BotFlowStep } from '$lib/types';
-	import InlineEdit from '$lib/components/InlineEdit.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 
@@ -40,9 +39,22 @@
 	let uploadingImage = $state(false);
 	let imageFileInput = $state<HTMLInputElement>();
 
-	let savedFormState = $state<string>('');
 	let undoStack = $state<string[]>([]);
 	let redoStack = $state<string[]>([]);
+
+	let hasUnsavedChanges = $state(false);
+	let showNewStepForm = $state(false);
+
+	function markDirty() { hasUnsavedChanges = true; }
+
+	function snapshotForm(): string {
+		return JSON.stringify({
+			id: editingStep?.id, step_key: formStepKey, step_label: formLabel,
+			step_type: formType, prompt_message: formMessage, next_step: formNextStep,
+			input_variable: formInputVar, button_choices: formButtonChoices, sort_order: formSortOrder,
+			image_url: formImageUrl, carousel_items: formCarouselItems
+		});
+	}
 
 	onMount(async () => { await loadSteps(); });
 
@@ -55,6 +67,7 @@
 
 	let sortedSteps = $derived([...steps].sort((a, b) => a.sort_order - b.sort_order));
 	let stepMap = $derived(new Map(sortedSteps.map(s => [s.step_key, s])));
+	let panelOpen = $derived(selectedStepId !== null || showNewStepForm || (sortedSteps.length === 0 && !loading));
 
 	let selectedStep = $derived(sortedSteps.find(s => s.id === selectedStepId) || null);
 
@@ -92,7 +105,10 @@
 	}
 
 	function selectStep(step: BotFlowStep) {
-		saveFormSnapshot();
+		if (hasUnsavedChanges && (!editingStep || editingStep.id !== step.id)) {
+			if (!confirm('You have unsaved changes. Discard them?')) return;
+		}
+		saveUndoSnapshot();
 		selectedStepId = step.id;
 		editingStep = step;
 		formStepKey = step.step_key;
@@ -105,17 +121,31 @@
 		formButtonChoices = step.button_choices ? [...step.button_choices] : [];
 		formImageUrl = step.image_url || '';
 		formCarouselItems = (step.carousel_items as any[]) ? [...(step.carousel_items as any[])] : [];
+		formAiPrompt = (step as any).ai_prompt || '';
+		formAiContext = (step as any).ai_context || 'general';
+		hasUnsavedChanges = false;
 	}
 
 	function deselectStep() {
+		if (hasUnsavedChanges) {
+			if (!confirm('You have unsaved changes. Discard them?')) return;
+		}
 		selectedStepId = null;
 		editingStep = null;
+		showNewStepForm = false;
+		hasUnsavedChanges = false;
+		undoStack = [];
+		redoStack = [];
 	}
 
 	function createNewStep() {
-		saveFormSnapshot();
+		if (hasUnsavedChanges) {
+			if (!confirm('You have unsaved changes. Discard them?')) return;
+		}
+		saveUndoSnapshot();
 		editingStep = null;
 		selectedStepId = null;
+		showNewStepForm = true;
 		formStepKey = '';
 		formLabel = '';
 		formType = 'text_input';
@@ -128,42 +158,31 @@
 		formCarouselItems = [];
 		formAiPrompt = '';
 		formAiContext = 'general';
+		hasUnsavedChanges = false;
+		undoStack = [];
+		redoStack = [];
 	}
 
-	function saveFormSnapshot() {
-		if (editingStep) {
-			undoStack = [...undoStack.slice(-20), JSON.stringify({
-				id: editingStep.id, step_key: formStepKey, step_label: formLabel,
-				step_type: formType, prompt_message: formMessage, next_step: formNextStep,
-				input_variable: formInputVar, button_choices: formButtonChoices, sort_order: formSortOrder,
-				image_url: formImageUrl, carousel_items: formCarouselItems
-			})];
-			redoStack = [];
-		}
+	function saveUndoSnapshot() {
+		if (!editingStep) return;
+		undoStack = [...undoStack.slice(-20), snapshotForm()];
+		redoStack = [];
 	}
 
 	function undoForm() {
 		if (undoStack.length === 0) return;
 		const last = JSON.parse(undoStack.pop()!);
-		redoStack = [...redoStack, JSON.stringify({
-			id: last.id, step_key: formStepKey, step_label: formLabel,
-			step_type: formType, prompt_message: formMessage, next_step: formNextStep,
-			input_variable: formInputVar, button_choices: formButtonChoices, sort_order: formSortOrder,
-			image_url: formImageUrl, carousel_items: formCarouselItems
-		})];
+		redoStack = [...redoStack, snapshotForm()];
 		restoreFormState(last);
+		markDirty();
 	}
 
 	function redoForm() {
 		if (redoStack.length === 0) return;
 		const next = JSON.parse(redoStack.pop()!);
-		undoStack = [...undoStack, JSON.stringify({
-			id: next.id, step_key: formStepKey, step_label: formLabel,
-			step_type: formType, prompt_message: formMessage, next_step: formNextStep,
-			input_variable: formInputVar, button_choices: formButtonChoices, sort_order: formSortOrder,
-			image_url: formImageUrl, carousel_items: formCarouselItems
-		})];
+		undoStack = [...undoStack, snapshotForm()];
 		restoreFormState(next);
+		markDirty();
 	}
 
 	function restoreFormState(state: any) {
@@ -209,12 +228,15 @@
 			if (editingStep) {
 				await api.updateBotFlowStep(editingStep.id, payload);
 				showToast('Step updated.', 'success');
+				hasUnsavedChanges = false;
 			} else {
 				payload.sortOrder = sortedSteps.length;
 				await api.createBotFlowStep(payload);
 				showToast('Step added.', 'success');
-				deselectStep();
-				createNewStep();
+				showNewStepForm = false;
+				hasUnsavedChanges = false;
+				undoStack = [];
+				redoStack = [];
 			}
 			await loadSteps();
 		} catch {
@@ -566,8 +588,8 @@
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
 	title="Delete Step?"
-	message="This will remove the step and may break flow connections."
-	confirmText="Delete"
+	message="This permanently removes the step from your flow."
+	confirmText="Yes, Delete"
 	cancelText="Cancel"
 	variant="danger"
 	onConfirm={confirmDeleteStep}
@@ -709,13 +731,13 @@
 		</div>
 
 		<!-- Side Panel Editor -->
-		<div class="side-panel" class:open={selectedStepId !== null || (!editingStep && sortedSteps.length === 0)}>
+		<div class="side-panel" class:open={panelOpen}>
 			<div class="panel-header">
 				<h3>{editingStep ? 'Edit Step' : 'New Step'}</h3>
 				<div class="panel-header-actions">
 					{#if editingStep}
-						<button class="btn-icon" onclick={undoForm} disabled={undoStack.length === 0} title="Undo">↩</button>
-						<button class="btn-icon" onclick={redoForm} disabled={redoStack.length === 0} title="Redo">↪</button>
+						<button class="btn-icon" onclick={undoForm} disabled={undoStack.length === 0} title="Undo (Ctrl+Z)">↩</button>
+						<button class="btn-icon" onclick={redoForm} disabled={redoStack.length === 0} title="Redo (Ctrl+Y)">↪</button>
 					{/if}
 					<button class="btn-icon" onclick={deselectStep} title="Close">×</button>
 				</div>
