@@ -66,19 +66,23 @@ async function saveBotMessage(db: DbFn, convId: number, content: string): Promis
 	);
 }
 
-async function getAiResponse(prompt: string, systemPrompt: string, language: string): Promise<string | null> {
+async function getAiResponse(prompt: string, systemPrompt: string, language: string, modelOverride?: string | null, temperatureOverride?: number | null): Promise<string | null> {
+	const model = modelOverride || 'deepseek/deepseek-chat';
+	const temperature = temperatureOverride ?? 0.7;
+	const maxTokens = 300;
+
+	const langInstruction = language === 'tl-en'
+		? 'Reply in Taglish (mix of Tagalog and English). Be natural and conversational.'
+		: language === 'tl'
+			? 'Reply in Tagalog/Filipino.'
+			: 'Reply in English.';
+
 	// Try OpenRouter first
 	const openRouterKey = process.env.OPENROUTER_API_KEY;
 	if (openRouterKey) {
 		try {
-			const langInstruction = language === 'tl-en'
-				? 'Reply in Taglish (mix of Tagalog and English). Be natural and conversational, like talking to a friend.'
-				: language === 'tl'
-					? 'Reply in Tagalog/Filipino.'
-					: 'Reply in English.';
-
 			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+			const timeoutId = setTimeout(() => controller.abort(), 15000);
 
 			const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 				method: 'POST',
@@ -87,95 +91,57 @@ async function getAiResponse(prompt: string, systemPrompt: string, language: str
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					model: 'deepseek/deepseek-chat',
+					model,
 					messages: [
-						{ 
-							role: 'system', 
-							content: `${systemPrompt}\n\n${langInstruction}\nKeep replies short and helpful (2-3 sentences max).` 
-						},
+						{ role: 'system', content: `${systemPrompt}\n\n${langInstruction}\nKeep replies short and helpful (2-3 sentences max).` },
 						{ role: 'user', content: prompt }
 					],
-					max_tokens: 300,
-					temperature: 0.7
+					max_tokens: maxTokens,
+					temperature
 				}),
 				signal: controller.signal
 			});
-			
+
 			clearTimeout(timeoutId);
-			
+
 			if (!resp.ok) {
 				console.error('OpenRouter API error:', resp.status);
 				return null;
 			}
-			
-			const data = await resp.json() as { 
-				choices?: Array<{ message?: { content?: string } }>;
-				error?: { message: string };
-			};
-			
-			if (data.error) {
-				console.error('OpenRouter error:', data.error.message);
-				return null;
-			}
-			
-			if (data.choices?.[0]?.message?.content) {
-				return data.choices[0].message.content.trim();
-			}
+
+			const data = await resp.json() as { choices?: Array<{ message?: { content?: string } }>; error?: { message: string } };
+			if (data.error) { console.error('OpenRouter error:', data.error.message); return null; }
+			if (data.choices?.[0]?.message?.content) return data.choices[0].message.content.trim();
 		} catch (err) {
-			if ((err as Error).name === 'AbortError') {
-				console.error('OpenRouter timeout');
-			} else {
-				console.error('OpenRouter error:', err);
-			}
+			if ((err as Error).name === 'AbortError') console.error('OpenRouter timeout');
+			else console.error('OpenRouter error:', err);
 		}
 	}
 
-	// Fallback: try Gemini
+	// Fallback: Gemini
 	const geminiKey = process.env.GEMINI_API_KEY;
 	if (geminiKey) {
 		try {
 			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), 10000);
+			const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-			const resp = await fetch(
-				`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiKey}`, 
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						contents: [{ parts: [{ text: `${systemPrompt}\n\nUser: ${prompt}` }] }]
-					}),
-					signal: controller.signal
-				}
-			);
-			
+			const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiKey}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\nUser: ${prompt}` }] }] }),
+				signal: controller.signal
+			});
+
 			clearTimeout(timeoutId);
-			
-			if (!resp.ok) {
-				console.error('Gemini API error:', resp.status);
-				return null;
-			}
-			
+			if (!resp.ok) { console.error('Gemini API error:', resp.status); return null; }
+
 			const data = await resp.json() as Record<string, unknown>;
-			const candidates = data.candidates as Array<Record<string, unknown>> | undefined;
-			const content = candidates?.[0]?.content as Record<string, unknown> | undefined;
-			const parts = content?.parts as Array<Record<string, unknown>> | undefined;
-			const text = parts?.[0]?.text as string | undefined;
-			
-			if (data.error) {
-				console.error('Gemini error:', (data.error as Record<string, string>)?.message);
-				return null;
-			}
-			
-			if (text) {
-				return text.trim();
-			}
+			const candidates = data.candidates as Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+			const text = candidates?.[0]?.content?.parts?.[0]?.text;
+			if (text) return text.trim();
 		} catch (err) {
-			if ((err as Error).name === 'AbortError') {
-				console.error('Gemini timeout');
-			} else {
-				console.error('Gemini error:', err);
-			}
+			if ((err as Error).name === 'AbortError') console.error('Gemini timeout');
+			else console.error('Gemini error:', err);
 		}
 	}
 
@@ -311,30 +277,31 @@ async function processBotFlow(
 				// AI decision step: use AI to classify input and route
 				const aiPrompt = String(step.ai_prompt || '');
 				const aiContext = String(step.ai_context || '');
-				
+				const aiModel = (step as Record<string, unknown>).ai_model as string | null;
+				const aiTemp = (step as Record<string, unknown>).ai_temperature as number | null;
+
 				if (aiContext === 'faq') {
-					// RAG: search FAQs for best match
 					const faqAnswer = await matchFaqAi(db, message);
 					if (faqAnswer) {
 						await saveBotMessage(db, conv.id, faqAnswer);
 						await sendFacebookMessage(senderId, faqAnswer);
 					}
 				}
-				
-				// AI classification for routing
+
 				const aiResponse = await getAiResponse(
 					`Customer message: "${message}"\n\nWhich step should we route to? Reply ONLY with the step key:`,
 					`You are a conversation router. Based on the customer's message, choose the next step. Reply with ONLY the step key, nothing else. Valid steps: ${steps.map((s: Record<string, unknown>) => s.step_key).join(', ')}`,
-					'en'
+					'en',
+					aiModel,
+					aiTemp
 				);
-				
+
 				const cleanedResponse = (aiResponse || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
 				const matchedStep = steps.find((s: Record<string, unknown>) => 
 					String(s.step_key || '').toLowerCase() === cleanedResponse
 				);
 				nextStepKey = matchedStep ? String(matchedStep.step_key) : String(step.next_step || '');
-				
-				// Store AI response
+
 				if (step.input_variable) {
 					collectedData[String(step.input_variable)] = aiResponse || '';
 				}

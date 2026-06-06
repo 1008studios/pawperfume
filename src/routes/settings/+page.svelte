@@ -60,6 +60,9 @@
 				ai_language: tenant.ai_language,
 				ai_tone: tenant.ai_tone,
 				ai_enabled: tenant.ai_enabled,
+				ai_model: tenant.ai_model,
+				ai_temperature: tenant.ai_temperature,
+				ai_max_tokens: tenant.ai_max_tokens
 			});
 			showToast('Settings saved.', 'success');
 		} catch { showToast('Could not save settings. Please try again.', 'error'); }
@@ -285,6 +288,31 @@
 								<option value="friendly">Friendly</option>
 								<option value="professional">Professional</option>
 								<option value="casual">Casual</option>
+							</select>
+						</div>
+						<div class="form-group">
+							<label for="ai-model">AI Model</label>
+							<select id="ai-model" bind:value={tenant.ai_model}>
+								<option value="deepseek/deepseek-chat">DeepSeek Chat</option>
+								<option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+								<option value="openai/gpt-4o">GPT-4o</option>
+								<option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
+								<option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
+								<option value="meta-llama/llama-4-maverick">Llama 4 Maverick</option>
+							</select>
+						</div>
+						<div class="form-group">
+							<label for="ai-temp">Temperature: {tenant.ai_temperature ?? 0.7}</label>
+							<input id="ai-temp" type="range" min="0" max="1" step="0.05" bind:value={tenant.ai_temperature} />
+							<span class="form-hint">Lower = more predictable. Higher = more creative.</span>
+						</div>
+						<div class="form-group">
+							<label for="ai-max-tokens">Max Response Length</label>
+							<select id="ai-max-tokens" bind:value={tenant.ai_max_tokens}>
+								<option value={100}>Short (100 tokens)</option>
+								<option value={300}>Medium (300 tokens)</option>
+								<option value={500}>Long (500 tokens)</option>
+								<option value={1000}>Very Long (1000 tokens)</option>
 							</select>
 						</div>
 					</div>

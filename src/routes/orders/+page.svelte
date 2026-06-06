@@ -35,6 +35,15 @@
 	let page = $state(1);
 	const pageSize = 25;
 
+	const DB_MODELS = [
+		{ key: 'deepseek/deepseek-chat', label: 'DeepSeek Chat' },
+		{ key: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
+		{ key: 'openai/gpt-4o', label: 'GPT-4o' },
+		{ key: 'anthropic/claude-3-haiku', label: 'Claude 3 Haiku' },
+		{ key: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' },
+		{ key: 'meta-llama/llama-4-maverick', label: 'Llama 4 Maverick' }
+	];
+
 	const orderTemplates = [
 		{ name: 'Walk-in Sale', status: 'delivered', payment: 'paid', amount: 0, notes: 'Walk-in customer' },
 		{ name: 'Online Order (COD)', status: 'new', payment: 'pending', amount: 0, notes: 'Cash on delivery' },

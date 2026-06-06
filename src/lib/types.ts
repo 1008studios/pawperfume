@@ -12,6 +12,9 @@ export interface Tenant {
 	ai_language: string;
 	ai_tone: string;
 	ai_enabled: boolean;
+	ai_model: string;
+	ai_temperature: number;
+	ai_max_tokens: number;
 	plan: string;
 	fb_page_access_token: string | null;
 	fb_app_secret: string | null;
@@ -139,6 +142,14 @@ export interface BotFlowStep {
 		buttonLabel: string;
 		buttonNextStep: string;
 	}> | null;
+	ai_prompt?: string | null;
+	ai_context?: string | null;
+	ai_model?: string | null;
+	ai_temperature?: number | null;
+	ai_max_tokens?: number | null;
+	is_required?: boolean;
+	validation_pattern?: string | null;
+	error_message?: string | null;
 }
 
 export interface Automation {

@@ -420,7 +420,7 @@ export async function handleAdmin(path: string, method: string, request: Request
 			const vals: unknown[] = [];
 			let n = 1;
 			
-			const allowedFields = ['brand_name', 'brand_tagline', 'brand_welcome_message', 'brand_favicon_emoji', 'brand_primary_color', 'brand_accent_color', 'ai_system_prompt', 'ai_language', 'ai_tone', 'ai_enabled'];
+			const allowedFields = ['brand_name', 'brand_tagline', 'brand_welcome_message', 'brand_favicon_emoji', 'brand_primary_color', 'brand_accent_color', 'ai_system_prompt', 'ai_language', 'ai_tone', 'ai_enabled', 'ai_model', 'ai_temperature', 'ai_max_tokens'];
 			
 			allowedFields.forEach(k => {
 				if (body[k] !== undefined) { 
@@ -479,7 +479,12 @@ export async function handleAdmin(path: string, method: string, request: Request
 				sortOrder: 'sort_order', sort_order: 'sort_order',
 				buttonChoices: 'button_choices', button_choices: 'button_choices',
 				imageUrl: 'image_url', image_url: 'image_url',
-				carouselItems: 'carousel_items', carousel_items: 'carousel_items'
+				carouselItems: 'carousel_items', carousel_items: 'carousel_items',
+				aiPrompt: 'ai_prompt', ai_prompt: 'ai_prompt',
+				aiContext: 'ai_context', ai_context: 'ai_context',
+				aiModel: 'ai_model', ai_model: 'ai_model',
+				aiTemperature: 'ai_temperature', ai_temperature: 'ai_temperature',
+				aiMaxTokens: 'ai_max_tokens', ai_max_tokens: 'ai_max_tokens'
 			};
 			
 			for (const [bodyKey, dbCol] of Object.entries(fieldMap)) {
@@ -736,10 +741,15 @@ export async function handleAdmin(path: string, method: string, request: Request
 					const buttonChoices = body.buttonChoices || body.button_choices || [];
 					const imageUrl = (body.imageUrl || body.image_url || '') as string;
 					const carouselItems = body.carouselItems || body.carousel_items || [];
+					const aiPrompt = (body.aiPrompt || body.ai_prompt || null) as string | null;
+					const aiContext = (body.aiContext || body.ai_context || 'general') as string;
+					const aiModel = (body.aiModel || body.ai_model || null) as string | null;
+					const aiTemperature = body.aiTemperature ?? body.ai_temperature ?? null;
+					const aiMaxTokens = body.aiMaxTokens ?? body.ai_max_tokens ?? null;
 					await db(
-						`INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, button_choices, next_step, input_variable, sort_order, image_url, carousel_items) 
-						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-						[1, stepKey, stepLabel, stepType, promptMsg, JSON.stringify(buttonChoices), nextStep, inputVar, sortOrder, imageUrl, JSON.stringify(carouselItems)]
+						`INSERT INTO bot_flow_steps (tenant_id, step_key, step_label, step_type, prompt_message, button_choices, next_step, input_variable, sort_order, image_url, carousel_items, ai_prompt, ai_context, ai_model, ai_temperature, ai_max_tokens) 
+						 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+						[1, stepKey, stepLabel, stepType, promptMsg, JSON.stringify(buttonChoices), nextStep, inputVar, sortOrder, imageUrl, JSON.stringify(carouselItems), aiPrompt, aiContext, aiModel, aiTemperature, aiMaxTokens]
 					);
 					break;
 				}

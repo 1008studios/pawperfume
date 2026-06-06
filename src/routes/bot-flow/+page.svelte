@@ -35,6 +35,9 @@
 	let formCarouselItems = $state<Array<{ title: string; subtitle: string; imageUrl: string; buttonLabel: string; buttonNextStep: string }>>([]);
 	let formAiPrompt = $state('');
 	let formAiContext = $state('general');
+	let formAiModel = $state('');
+	let formAiTemperature = $state(0.7);
+	let formAiMaxTokens = $state(300);
 
 	let uploadingImage = $state(false);
 	let imageFileInput = $state<HTMLInputElement>();
@@ -44,6 +47,9 @@
 
 	let hasUnsavedChanges = $state(false);
 	let showNewStepForm = $state(false);
+	let searchQuery = $state('');
+	let showPhonePreview = $state(true);
+	let previewFollowSelected = $state(false);
 
 	function markDirty() { hasUnsavedChanges = true; }
 
@@ -52,11 +58,30 @@
 			id: editingStep?.id, step_key: formStepKey, step_label: formLabel,
 			step_type: formType, prompt_message: formMessage, next_step: formNextStep,
 			input_variable: formInputVar, button_choices: formButtonChoices, sort_order: formSortOrder,
-			image_url: formImageUrl, carousel_items: formCarouselItems
+			image_url: formImageUrl, carousel_items: formCarouselItems,
+			ai_prompt: formAiPrompt, ai_context: formAiContext, ai_model: formAiModel, ai_temperature: formAiTemperature, ai_max_tokens: formAiMaxTokens
 		});
 	}
 
-	onMount(async () => { await loadSteps(); });
+	onMount(async () => {
+		await loadSteps();
+		window.addEventListener('keydown', handleGlobalKeys);
+	});
+
+	function handleGlobalKeys(e: KeyboardEvent) {
+		if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+			e.preventDefault();
+			if (editingStep || showNewStepForm) saveStep();
+		}
+		if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && editingStep) {
+			e.preventDefault();
+			undoForm();
+		}
+		if ((e.ctrlKey || e.metaKey) && e.key === 'y' && editingStep) {
+			e.preventDefault();
+			redoForm();
+		}
+	}
 
 	async function loadSteps() {
 		loading = true;
@@ -68,6 +93,14 @@
 	let sortedSteps = $derived([...steps].sort((a, b) => a.sort_order - b.sort_order));
 	let stepMap = $derived(new Map(sortedSteps.map(s => [s.step_key, s])));
 	let panelOpen = $derived(selectedStepId !== null || showNewStepForm || (sortedSteps.length === 0 && !loading));
+
+	let filteredSteps = $derived(
+		searchQuery ? sortedSteps.filter(s =>
+			(s.step_label || '').toLowerCase().includes(searchQuery) ||
+			s.step_key.toLowerCase().includes(searchQuery) ||
+			(s.prompt_message || '').toLowerCase().includes(searchQuery)
+		) : sortedSteps
+	);
 
 	let selectedStep = $derived(sortedSteps.find(s => s.id === selectedStepId) || null);
 
@@ -123,6 +156,9 @@
 		formCarouselItems = (step.carousel_items as any[]) ? [...(step.carousel_items as any[])] : [];
 		formAiPrompt = (step as any).ai_prompt || '';
 		formAiContext = (step as any).ai_context || 'general';
+		formAiModel = (step as any).ai_model || '';
+		formAiTemperature = (step as any).ai_temperature ?? 0.7;
+		formAiMaxTokens = (step as any).ai_max_tokens ?? 300;
 		hasUnsavedChanges = false;
 	}
 
@@ -158,6 +194,9 @@
 		formCarouselItems = [];
 		formAiPrompt = '';
 		formAiContext = 'general';
+		formAiModel = '';
+		formAiTemperature = 0.7;
+		formAiMaxTokens = 300;
 		hasUnsavedChanges = false;
 		undoStack = [];
 		redoStack = [];
@@ -197,6 +236,11 @@
 		formButtonChoices = state.button_choices || [];
 		formImageUrl = state.image_url || '';
 		formCarouselItems = state.carousel_items || [];
+		formAiPrompt = state.ai_prompt || '';
+		formAiContext = state.ai_context || 'general';
+		formAiModel = state.ai_model || '';
+		formAiTemperature = state.ai_temperature ?? 0.7;
+		formAiMaxTokens = state.ai_max_tokens ?? 300;
 	}
 
 	function autoGenerateKey() {
@@ -221,7 +265,10 @@
 			image_url: formImageUrl,
 			carousel_items: formCarouselItems,
 			ai_prompt: formAiPrompt || null,
-			ai_context: formAiContext
+			ai_context: formAiContext,
+			ai_model: formAiModel || null,
+			ai_temperature: formAiTemperature,
+			ai_max_tokens: formAiMaxTokens
 		};
 
 		try {
@@ -782,13 +829,41 @@
 							<label for="bf-ai-prompt">AI Prompt</label>
 							<textarea id="bf-ai-prompt" bind:value={formAiPrompt} placeholder="Instructions for the AI router..." rows="2"></textarea>
 						</div>
-						<div class="form-group">
-							<label for="bf-ai-ctx">AI Context</label>
-							<select id="bf-ai-ctx" bind:value={formAiContext}>
-								<option value="general">General</option>
-								<option value="faq">FAQ Search (RAG)</option>
-								<option value="order">Order Help</option>
-							</select>
+						<div class="form-row">
+							<div class="form-group" style="flex:1">
+								<label for="bf-ai-ctx">AI Context</label>
+								<select id="bf-ai-ctx" bind:value={formAiContext}>
+									<option value="general">General Router</option>
+									<option value="faq">FAQ Search (RAG)</option>
+									<option value="order">Order Help</option>
+								</select>
+							</div>
+							<div class="form-group" style="flex:1">
+								<label for="bf-ai-model">Model <span class="form-hint">optional</span></label>
+								<select id="bf-ai-model" bind:value={formAiModel}>
+									<option value="">— Use default —</option>
+									<option value="deepseek/deepseek-chat">DeepSeek Chat</option>
+									<option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+									<option value="openai/gpt-4o">GPT-4o</option>
+									<option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
+									<option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
+									<option value="meta-llama/llama-4-maverick">Llama 4 Maverick</option>
+								</select>
+							</div>
+						</div>
+						<div class="form-row">
+							<div class="form-group" style="flex:1">
+								<label for="bf-ai-temp">Temperature: {formAiTemperature}</label>
+								<input id="bf-ai-temp" type="range" min="0" max="1" step="0.05" bind:value={formAiTemperature} />
+							</div>
+							<div class="form-group" style="flex:1">
+								<label for="bf-ai-max">Max Tokens</label>
+								<select id="bf-ai-max" bind:value={formAiMaxTokens}>
+									<option value={100}>Short (100)</option>
+									<option value={300}>Medium (300)</option>
+									<option value={500}>Long (500)</option>
+								</select>
+							</div>
 						</div>
 					{/if}
 
