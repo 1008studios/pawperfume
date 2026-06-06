@@ -834,8 +834,10 @@ export async function handleAdmin(path: string, method: string, request: Request
 				}
 				case 'test-bot': {
 					const tenant = (await db('SELECT * FROM tenants WHERE id = $1', [1]))[0];
-					const systemPrompt = String(tenant?.ai_system_prompt || 'You are a helpful assistant for a perfume business.');
+					const systemPrompt = body.systemPrompt || String(tenant?.ai_system_prompt || 'You are a helpful assistant for a perfume business.');
 					const language = String(tenant?.ai_language || 'en');
+					const requestModel = body.aiModel || String(tenant?.ai_model || 'deepseek/deepseek-chat');
+					const requestTemp = Number(body.aiTemperature ?? tenant?.ai_temperature ?? 0.7);
 					const openRouterKey = process.env.OPENROUTER_API_KEY;
 					if (!openRouterKey) return json({ reply: 'AI not configured (no OPENROUTER_API_KEY)' });
 					const langInstruction = language === 'tl-en'
@@ -846,12 +848,12 @@ export async function handleAdmin(path: string, method: string, request: Request
 							method: 'POST',
 							headers: { 'Authorization': `Bearer ${openRouterKey}`, 'Content-Type': 'application/json' },
 							body: JSON.stringify({
-								model: 'deepseek/deepseek-chat',
+								model: requestModel,
 								messages: [
 									{ role: 'system', content: `${systemPrompt}\n\n${langInstruction}\nKeep replies short and helpful (2-3 sentences max).` },
 									{ role: 'user', content: String(body.message || 'Hello') }
 								],
-								max_tokens: 300, temperature: 0.7
+								max_tokens: 300, temperature: requestTemp
 							})
 						});
 						const data = await resp.json() as { choices?: Array<{ message?: { content?: string } }> };

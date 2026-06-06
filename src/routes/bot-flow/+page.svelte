@@ -532,33 +532,66 @@
 		}
 	];
 
-	// ── Test Mode ────────────────────────────────────────────
-	function startTest() {
-		testStepIndex = 0;
+	// ── Test Mode (with real AI for ai_decision steps) ──────
+	let aiTesting = $state(false);
+
+	function startTest() { startTestFrom(0); }
+	function startTestFrom(index: number) {
+		if (index < 0 || index >= sortedSteps.length) return;
+		testStepIndex = index;
 		testInput = '';
 		testLog = [];
 		testVariables = {};
+		aiTesting = false;
 		showTestMode = true;
-		if (sortedSteps.length > 0) {
-			const firstStep = sortedSteps[0];
-			if (firstStep.prompt_message) {
-				testLog.push({ type: 'bot', text: firstStep.prompt_message, imageUrl: firstStep.image_url || undefined });
-			}
-			if (firstStep.step_type === 'auto') {
-				setTimeout(() => executeTestTransition(firstStep, ''), 800);
-			}
+		const firstStep = sortedSteps[index];
+		if (firstStep.prompt_message) {
+			testLog.push({ type: 'bot', text: firstStep.prompt_message, imageUrl: firstStep.image_url || undefined });
+		}
+		if (firstStep.step_type === 'auto') {
+			setTimeout(() => executeTestTransition(firstStep, ''), 800);
 		}
 	}
 
-	function executeTestTransition(currentStep: BotFlowStep, userInput: string) {
+	async function executeTestTransition(currentStep: BotFlowStep, userInput: string) {
 		if (currentStep.input_variable && userInput) {
 			testVariables[currentStep.input_variable] = userInput;
 		}
 		let nextStepKey: string | null = null;
+
 		if (currentStep.step_type === 'button_choice') {
 			const choices = currentStep.button_choices || [];
 			const match = choices.find(c => c.label.toLowerCase() === userInput.toLowerCase());
 			nextStepKey = match ? match.next_step : currentStep.next_step;
+		} else if (currentStep.step_type === 'ai_decision') {
+			// Use real AI to classify and generate a persona-driven response
+			aiTesting = true;
+			testLog = [...testLog];
+			try {
+				const token = localStorage.getItem('pp_token') || '';
+				const res = await fetch('/api/admin/test-bot', {
+					method: 'POST',
+					headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						message: userInput,
+						systemPrompt: currentStep.ai_prompt || (currentStep as any).ai_prompt || 'You are a helpful assistant.',
+						aiContext: (currentStep as any).ai_context || 'general',
+						aiModel: (currentStep as any).ai_model || null,
+						aiTemperature: (currentStep as any).ai_temperature ?? null
+					})
+				});
+				const data = await res.json();
+				if (data.reply) {
+					testLog.push({ type: 'bot', text: data.reply });
+					testLog = [...testLog];
+				}
+				nextStepKey = data.nextStep || currentStep.next_step;
+			} catch (err) {
+				console.error('AI test error:', err);
+				nextStepKey = currentStep.next_step;
+			} finally {
+				aiTesting = false;
+			}
 		} else {
 			nextStepKey = currentStep.next_step;
 		}
@@ -569,7 +602,7 @@
 				testStepIndex = nextIdx;
 				const nextStep = sortedSteps[nextIdx];
 				setTimeout(() => {
-					if (nextStep.prompt_message) {
+					if (currentStep.step_type !== 'ai_decision' && nextStep.prompt_message) {
 						testLog.push({ type: 'bot', text: nextStep.prompt_message, imageUrl: nextStep.image_url || undefined });
 					}
 					testLog = [...testLog];
@@ -751,6 +784,9 @@
 								</div>
 							</div>
 							<div class="card-actions">
+								<button class="btn-icon" onclick={(e) => { e.stopPropagation(); startTestFrom(i); }} title="Test from here">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+								</button>
 								<button class="btn-icon" onclick={(e) => { e.stopPropagation(); selectStep(step); }} title="Edit">
 									<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
 								</button>

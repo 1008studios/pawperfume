@@ -89,6 +89,22 @@
 		} finally { if (!silent) loading = false; }
 	}
 
+	async function saveColumnConfig(col: ColumnConfig) {
+		try {
+			if (col.id > 0) {
+				await api.generic(`/column-configs/${col.id}`, 'PUT', { column_label: col.column_label, is_visible: col.is_visible, sort_order: col.sort_order, width: col.width });
+			} else {
+				await api.generic('/column-configs', 'POST', { tableName: 'orders', columnKey: col.column_key, columnLabel: col.column_label, sortOrder: col.sort_order });
+				await loadOrders(true);
+			}
+		} catch (err) { console.error('Column config save error:', err); }
+	}
+
+	async function toggleColumnVisible(col: ColumnConfig) {
+		col.is_visible = !col.is_visible;
+		await saveColumnConfig(col);
+	}
+
 	let visibleColumns = $derived(
 		columnConfigs.filter(c => c.is_visible).sort((a, b) => a.sort_order - b.sort_order)
 	);
@@ -393,8 +409,8 @@
 			<div class="cm-list">
 				{#each columnConfigs.sort((a, b) => a.sort_order - b.sort_order) as col}
 					<div class="cm-item" class:visible={col.is_visible}>
-						<button class="cm-toggle" onclick={() => { col.is_visible = !col.is_visible; columnConfigs = [...columnConfigs]; }}>
-							{col.is_visible ? '' : ''}
+						<button class="cm-toggle" onclick={() => toggleColumnVisible(col)}>
+							{col.is_visible ? '👁' : '—'}
 						</button>
 						<span class="cm-label">{col.column_label}</span>
 					</div>
