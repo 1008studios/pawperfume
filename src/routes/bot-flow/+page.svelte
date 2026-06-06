@@ -39,6 +39,8 @@
 	let f_choices = $state<Array<{ label: string; next_step: string }>>([]);
 	let f_img = $state('');
 	let f_carousel = $state<Array<{ title: string; subtitle: string; imageUrl: string; buttonLabel: string; buttonNextStep: string }>>([]);
+	let f_ai_persona = $state('friendly');
+	let f_ai_mode = $state('guided');
 	let f_ai_prompt = $state('');
 	let f_ai_ctx = $state('general');
 	let f_ai_model = $state('');
@@ -87,7 +89,10 @@
 		f_msg = step.prompt_message || ''; f_next = step.next_step || ''; f_var = step.input_variable || '';
 		f_choices = step.button_choices ? [...step.button_choices] : [];
 		f_img = step.image_url || ''; f_carousel = (step.carousel_items as any[]) ? [...(step.carousel_items as any[])] : [];
-		f_ai_prompt = (step as any).ai_prompt || ''; f_ai_ctx = (step as any).ai_context || 'general';
+		f_ai_persona = (step as any).ai_persona || 'friendly';
+		f_ai_mode = (step as any).ai_mode || 'guided';
+		f_ai_prompt = (step as any).ai_prompt || '';
+		f_ai_ctx = (step as any).ai_context || 'general';
 		f_ai_model = (step as any).ai_model || ''; f_ai_temp = (step as any).ai_temperature ?? 0.7;
 		f_ai_tokens = (step as any).ai_max_tokens ?? 300;
 		hasUnsavedChanges = false;
@@ -103,7 +108,7 @@
 		editingStep = null; selectedStepId = null; showNewStepForm = true;
 		f_key = ''; f_label = ''; f_type = 'text_input'; f_msg = ''; f_next = ''; f_var = '';
 		f_choices = []; f_img = ''; f_carousel = [];
-		f_ai_prompt = ''; f_ai_ctx = 'general'; f_ai_model = ''; f_ai_temp = 0.7; f_ai_tokens = 300;
+		f_ai_persona = 'friendly'; f_ai_mode = 'guided'; f_ai_prompt = ''; f_ai_ctx = 'general'; f_ai_model = ''; f_ai_temp = 0.7; f_ai_tokens = 300;
 		hasUnsavedChanges = false;
 	}
 
@@ -111,7 +116,7 @@
 
 	async function saveStep() {
 		autoKey(); if (!f_key) { showToast('Step key is required.', 'error'); return; }
-		const p: any = { step_key: f_key, step_label: f_label, step_type: f_type, prompt_message: f_msg, next_step: f_next || null, input_variable: f_var || null, sort_order: editingStep ? editingStep.sort_order : sortedSteps.length, button_choices: f_choices, image_url: f_img, carousel_items: f_carousel, ai_prompt: f_ai_prompt || null, ai_context: f_ai_ctx, ai_model: f_ai_model || null, ai_temperature: f_ai_temp, ai_max_tokens: f_ai_tokens };
+		const p: any = { step_key: f_key, step_label: f_label, step_type: f_type, prompt_message: f_msg, next_step: f_next || null, input_variable: f_var || null, sort_order: editingStep ? editingStep.sort_order : sortedSteps.length, button_choices: f_choices, image_url: f_img, carousel_items: f_carousel, ai_persona: f_ai_persona, ai_mode: f_ai_mode, ai_prompt: f_ai_prompt || null, ai_context: f_ai_ctx, ai_model: f_ai_model || null, ai_temperature: f_ai_temp, ai_max_tokens: f_ai_tokens };
 		try {
 			if (editingStep) { await api.updateBotFlowStep(editingStep.id, p); showToast('Step updated.', 'success'); }
 			else { await api.createBotFlowStep(p); showToast('Step added.', 'success'); showNewStepForm = false; }
@@ -324,10 +329,17 @@
 						<div class="fg"><label>Type</label><select bind:value={f_type} onchange={markDirty}><option value="text_input">Text Input</option><option value="button_choice">Button Choice</option><option value="auto">Auto</option><option value="image">Image</option><option value="carousel">Carousel</option><option value="ai_decision">AI Decision</option></select></div>
 						<div class="fg"><label>Variable</label><input type="text" bind:value={f_var} placeholder="customer_name" oninput={markDirty} /></div>
 					</div>
-					<div class="fg"><label>Bot Message</label><textarea bind:value={f_msg} placeholder="What should the bot say?" rows="2" oninput={markDirty}></textarea></div>
+					<div class="fg"><label>AI Guide</label><textarea bind:value={f_msg} placeholder="Guide the AI: what should it ask or say?" rows="2" oninput={markDirty}></textarea></div>
+
+					{#if showAdvanced}
+						<div class="row">
+							<div class="fg"><label>Persona</label><select bind:value={f_ai_persona} onchange={markDirty}><option value="friendly">Friendly</option><option value="professional">Professional</option><option value="casual">Casual</option><option value="enthusiastic">Enthusiastic</option></select></div>
+							<div class="fg"><label>Mode</label><select bind:value={f_ai_mode} onchange={markDirty}><option value="guided">AI Generated</option><option value="exact">Exact Text</option></select></div>
+						</div>
+					{/if}
 
 					{#if f_type === 'ai_decision'}
-						<div class="fg"><label>AI Prompt</label><textarea bind:value={f_ai_prompt} placeholder="Instructions for AI..." rows="2" oninput={markDirty}></textarea></div>
+						<div class="fg"><label>AI Guide</label><textarea bind:value={f_ai_prompt} placeholder="Instructions for AI..." rows="2" oninput={markDirty}></textarea></div>
 						<div class="row">
 							<div class="fg"><label>Context</label><select bind:value={f_ai_ctx} onchange={markDirty}><option value="general">General Router</option><option value="faq">FAQ (RAG)</option><option value="order">Order Help</option></select></div>
 							<div class="fg"><label>Model</label><select bind:value={f_ai_model} onchange={markDirty}><option value="">— Default —</option><option value="deepseek/deepseek-chat">DeepSeek</option><option value="openai/gpt-4o-mini">GPT-4o Mini</option><option value="openai/gpt-4o">GPT-4o</option><option value="anthropic/claude-3-haiku">Claude 3</option><option value="google/gemini-2.0-flash-001">Gemini Flash</option></select></div>

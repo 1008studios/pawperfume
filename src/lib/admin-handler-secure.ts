@@ -482,6 +482,8 @@ export async function handleAdmin(path: string, method: string, request: Request
 				carouselItems: 'carousel_items', carousel_items: 'carousel_items',
 				aiPrompt: 'ai_prompt', ai_prompt: 'ai_prompt',
 				aiContext: 'ai_context', ai_context: 'ai_context',
+				aiPersona: 'ai_persona', ai_persona: 'ai_persona',
+				aiMode: 'ai_mode', ai_mode: 'ai_mode',
 				aiModel: 'ai_model', ai_model: 'ai_model',
 				aiTemperature: 'ai_temperature', ai_temperature: 'ai_temperature',
 				aiMaxTokens: 'ai_max_tokens', ai_max_tokens: 'ai_max_tokens'

@@ -213,6 +213,36 @@ async function matchAutomation(db: DbFn, message: string): Promise<string | null
 	return null;
 }
 
+// AI-centric: generate a natural response guided by the step's prompt_message
+async function generateGuidedResponse(
+	guide: string, persona: string, collectedData: Record<string, string>, 
+	userInput: string, modelOverride?: string | null, tempOverride?: number | null
+): Promise<string> {
+	if (!guide) return 'Got it! What\'s next?';
+	
+	const personaMap: Record<string, string> = {
+		friendly: 'You are a warm, friendly sales assistant for PawPerfume. Be conversational and upbeat. Use Taglish naturally when appropriate.',
+		professional: 'You are a professional customer service agent for PawPerfume. Be courteous, clear, and efficient.',
+		casual: 'You are a chill, casual PawPerfume rep. Talk like a friend. Keep it real and relaxed.',
+		enthusiastic: 'You are an enthusiastic PawPerfume ambassador. Be energetic and passionate about scents.'
+	};
+
+	const dataCtx = Object.entries(collectedData).length > 0 
+		? `\nCollected so far: ${Object.entries(collectedData).map(([k,v]) => `${k}=${v}`).join(', ')}`
+		: '';
+
+	try {
+		const reply = await getAiResponse(
+			`Customer said: "${userInput}"\nYour guide for this step: ${guide}${dataCtx}\n\nGenerate a natural, short response following the guide. 2-3 sentences max.`,
+			personaMap[persona] || personaMap.friendly,
+			'en', modelOverride, tempOverride
+		);
+		return reply || guide;
+	} catch {
+		return guide;
+	}
+}
+
 async function processBotFlow(
 	db: DbFn, 
 	conv: Conversation, 
@@ -259,26 +289,22 @@ async function processBotFlow(
 				collectedData[String(step.input_variable)] = message;
 			}
 
-			// Determine next step key — support button_choice routing
+			// Determine next step key
 			let nextStepKey: string | null = null;
 			const stepType = String(step.step_type || '');
 			
 			if (stepType === 'button_choice') {
 				const choices = (step.button_choices || []) as Array<{ label: string; next_step: string }>;
 				if (Array.isArray(choices) && choices.length > 0) {
-					const matchedChoice = choices.find(c => 
-						c.label && c.label.toLowerCase().trim() === message.toLowerCase().trim()
-					);
+					const matchedChoice = choices.find(c => c.label && c.label.toLowerCase().trim() === message.toLowerCase().trim());
 					nextStepKey = matchedChoice?.next_step || String(step.next_step || '');
 				} else {
 					nextStepKey = String(step.next_step || '');
 				}
 			} else if (stepType === 'ai_decision') {
-				// AI decision step: use AI to classify input and route
-				const aiPrompt = String(step.ai_prompt || '');
 				const aiContext = String(step.ai_context || '');
-				const aiModel = (step as Record<string, unknown>).ai_model as string | null;
-				const aiTemp = (step as Record<string, unknown>).ai_temperature as number | null;
+				const aiModel = step.ai_model as string | null;
+				const aiTemp = step.ai_temperature as number | null;
 
 				if (aiContext === 'faq') {
 					const faqAnswer = await matchFaqAi(db, message);
@@ -288,23 +314,13 @@ async function processBotFlow(
 					}
 				}
 
-				const aiResponse = await getAiResponse(
-					`Customer message: "${message}"\n\nWhich step should we route to? Reply ONLY with the step key:`,
-					`You are a conversation router. Based on the customer's message, choose the next step. Reply with ONLY the step key, nothing else. Valid steps: ${steps.map((s: Record<string, unknown>) => s.step_key).join(', ')}`,
-					'en',
-					aiModel,
-					aiTemp
+				const routerResp = await getAiResponse(
+					`Customer message: "${message}". Valid steps: ${steps.map((s: Record<string, unknown>) => s.step_key).join(', ')}. Reply ONLY with the best step key.`,
+					'You route customer messages to the correct conversation step. Reply with ONLY the step key, nothing else.',
+					'en', aiModel, aiTemp
 				);
-
-				const cleanedResponse = (aiResponse || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-				const matchedStep = steps.find((s: Record<string, unknown>) => 
-					String(s.step_key || '').toLowerCase() === cleanedResponse
-				);
-				nextStepKey = matchedStep ? String(matchedStep.step_key) : String(step.next_step || '');
-
-				if (step.input_variable) {
-					collectedData[String(step.input_variable)] = aiResponse || '';
-				}
+				nextStepKey = (routerResp || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '') || String(step.next_step || '');
+				if (step.input_variable) collectedData[String(step.input_variable)] = routerResp || '';
 			} else {
 				nextStepKey = String(step.next_step || '');
 			}
@@ -313,56 +329,53 @@ async function processBotFlow(
 			if (nextStepKey) {
 				const nextStepDef = steps.find((s: Record<string, unknown>) => s.step_key === nextStepKey);
 				if (nextStepDef) {
-					// FIX: Parameterized query
-					await db(
-						'UPDATE bot_flow_state SET current_step = $1, collected_data = $2 WHERE conversation_id = $3',
-						[nextStepKey, JSON.stringify(collectedData), conv.id]
-					);
+					await db('UPDATE bot_flow_state SET current_step = $1, collected_data = $2 WHERE conversation_id = $3',
+						[nextStepKey, JSON.stringify(collectedData), conv.id]);
 					
-					const promptMsg = String(nextStepDef.prompt_message || '');
-					await saveBotMessage(db, conv.id, promptMsg);
-					const sent = await sendFacebookMessage(senderId, promptMsg);
+					// AI-centric: generate the message using the step's guide as context
+					const aiMode = String((nextStepDef as any).ai_mode || 'guided');
+					const promptGuide = String(nextStepDef.prompt_message || '');
+					const persona = String((nextStepDef as any).ai_persona || 'friendly');
+					const stepModel = (nextStepDef as any).ai_model as string | null;
+					const stepTemp = (nextStepDef as any).ai_temperature as number | null;
 					
-					if (!sent) {
-						console.error('Failed to send bot flow message to:', senderId);
+					let botMsg: string;
+					if (aiMode === 'exact' || stepType === 'auto') {
+						botMsg = promptGuide || 'Got it!';
+					} else {
+						// Generate a natural AI response guided by the prompt_message
+						botMsg = await generateGuidedResponse(
+							promptGuide, persona, collectedData, message,
+							stepModel, stepTemp
+						);
 					}
+					
+					await saveBotMessage(db, conv.id, botMsg);
+					await sendFacebookMessage(senderId, botMsg);
 
-					// If next step is auto, process it immediately with incremented depth
 					if (nextStepDef.step_type === 'auto') {
 						return processBotFlow(db, conv, '', senderId, depth + 1);
 					}
 					return true;
-				} else {
-					console.warn('Next step not found:', nextStepKey);
 				}
 			}
 
-			// Flow complete - create order from collected data
-			await db(
-				'UPDATE bot_flow_state SET is_complete = true, completed_at = NOW() WHERE conversation_id = $1',
-				[conv.id]
-			);
-
+			// Flow complete
+			await db('UPDATE bot_flow_state SET is_complete = true, completed_at = NOW() WHERE conversation_id = $1', [conv.id]);
 			const customerName = collectedData.customer_name || '';
 			const amountMatch = collectedData.bottle_size ? String(collectedData.bottle_size).match(/\d+/) : null;
 			const amount = amountMatch ? parseInt(amountMatch[0]) : 0;
-
 			if (customerName) {
-				// FIX: Parameterized query
-				await db(
-					`INSERT INTO orders (tenant_id, conversation_id, customer_name, amount, status, custom_fields) 
-					 VALUES ($1, $2, $3, $4, $5, $6)`,
-					[1, conv.id, customerName, amount, 'new', JSON.stringify(collectedData)]
-				);
+				await db(`INSERT INTO orders (tenant_id, conversation_id, customer_name, amount, status, custom_fields) VALUES ($1, $2, $3, $4, $5, $6)`,
+					[1, conv.id, customerName, amount, 'new', JSON.stringify(collectedData)]);
 			}
-
 			return true;
 		}
 	}
 
-	// Check if should start bot flow
+	// Start flow on natural intent detection
 	const lowerMessage = message.toLowerCase();
-	if (message === 'GET_STARTED' || lowerMessage.includes('order') || lowerMessage.includes('buy')) {
+	if (message === 'GET_STARTED' || lowerMessage.includes('order') || lowerMessage.includes('buy') || lowerMessage.includes('bili')) {
 		const steps = await db(
 			'SELECT * FROM bot_flow_steps WHERE tenant_id = $1 ORDER BY sort_order',
 			[1]
